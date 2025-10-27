@@ -16,10 +16,13 @@
 #include "esp_sleep.h"
 
 
-
+#include "esp_mac.h"
 
 
 void app_main() {
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+  ESP_LOGI("MAC", "");
   ESP_LOGI("progress", "[APP] Free memory: %d bytes", esp_get_free_heap_size());
   ESP_LOGI("progress", "[APP] IDF version: %s", esp_get_idf_version());
 
