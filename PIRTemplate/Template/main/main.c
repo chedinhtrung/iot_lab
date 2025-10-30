@@ -17,12 +17,16 @@
 
 
 #include "esp_mac.h"
-
+#define LED 17
 
 void app_main() {
+  gpio_set_direction(LED, GPIO_MODE_OUTPUT);
   uint8_t mac[6];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-  ESP_LOGI("MAC", "");
+  esp_efuse_mac_get_default(mac);
+  uint64_t mac_int = 0;
+  for (int i=0; i<6; i++){mac_int = (mac_int << 8) | mac[i];}
+
+  printf("MAC (uint64) = %llu\n", (unsigned long long)mac_int);
   ESP_LOGI("progress", "[APP] Free memory: %d bytes", esp_get_free_heap_size());
   ESP_LOGI("progress", "[APP] IDF version: %s", esp_get_idf_version());
 
@@ -31,7 +35,7 @@ void app_main() {
   esp_log_level_set("progress", ESP_LOG_INFO);
   esp_log_level_set("gauge", ESP_LOG_INFO);
 
-  getRSOC();
+  //getRSOC();
   esp_err_t ret = nvs_flash_init();
   if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
     ESP_ERROR_CHECK(nvs_flash_erase());
@@ -48,9 +52,10 @@ void app_main() {
   ESP_LOGI("progress", "Starting MQTT");
   start_mqtt();
 
-  ESP_LOGI("progress", "Sending battery status to MQTT");
-  sendBatteryStatusToMQTT();
-
+  
+  //ESP_LOGI("progress", "Sending battery status to MQTT");
+  //sendBatteryStatusToMQTT();
+  gpio_set_level(LED, 1);
   ESP_LOGI("progress", "Sending PIR event to MQTT");
   sendPIReventToMQTT();
 
@@ -63,5 +68,6 @@ void app_main() {
   }
   ESP_ERROR_CHECK(esp_sleep_enable_ext0_wakeup(PIR_PIN, 1));
   ESP_LOGI("progress", "Going to sleep");
+  gpio_set_level(LED, 0);
   esp_deep_sleep_start();
 }
