@@ -190,4 +190,5 @@ void sendTableToMQTT(void){
     }
     ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
   }
+  clear_table();
 }

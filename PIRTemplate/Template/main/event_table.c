@@ -9,6 +9,8 @@ int put_data(uint8_t type, uint8_t len, uint8_t* buf){
         return 1;          // Table full
     }
     table_index += 1;
+    event_table[table_index].type = type;
+    event_table[table_index].len = len;
     memcpy(&(event_table[table_index].payload), buf, len);
     return table_index + 1 == TABLE_SIZE;
 }

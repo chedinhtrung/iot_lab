@@ -34,7 +34,14 @@ char device_topic[20];
 char device_key[800];
 
 void start_wifi_mqtt(){
-  
+  ESP_LOGI("progress", "Starting Wifi");
+  start_wifi();
+
+  ESP_LOGI("progress", "Starting Clock");
+  start_clock();
+
+  ESP_LOGI("progress", "Starting MQTT");
+  start_mqtt();
 }
 
 void app_main() {
@@ -77,6 +84,8 @@ void app_main() {
     strcpy(device_key, DEVICE_KEY_DOOR);
   }
 
+  printf("roomID: %s", location);
+
   // TODO: wakeup reason
   esp_sleep_wakeup_cause_t wc = esp_sleep_get_wakeup_cause();
   switch (wc) {
@@ -86,8 +95,14 @@ void app_main() {
         default: ESP_LOGI("BOOT", "Power Up"); wuc=POWER; break;
   }
 
-  printf("Woke up \n");
+  printf("Woke up because %i \n", wc);
   // TODO: handle first plugged in (not a wakeup)
+  if (wuc == POWER){
+    ESP_LOGI("progress", "Starting Wifi");
+    start_wifi();
+    ESP_LOGI("progress", "Starting Clock");
+    start_clock();
+  }
 
   // TODO: setup the RTC DS3231
 
@@ -118,29 +133,29 @@ void app_main() {
 
   }
 
-  else if (mac_int == DEV_C_MAC){      // PIR event for device C
+  else if (mac_int == DEV_C_MAC && wuc == EXTI0){      // PIR event for device C
+  
     PIRData d = {0}; 
     time_t now = 0;
     time(&now);
-    d.timestamp = now;
+    d.timestamp = now * 1000;
     strcpy(&(d.roomID), location);
     table_full = put_data(PIRDATA, sizeof(PIRData), &d);
     printf("Recorded into table at index %i \n", table_index);
+    if (table_index > 0){
+      PIRData d1;
+      memcpy(&d1, &(event_table[table_index - 1].payload), event_table[table_index - 1].len);
+      printf("Content: timestamp %llu \n", d1.timestamp);
+    }
+   
   }
 
   // TODO: if table is full, send the events in the table (device independent)
   if (table_full){
     printf("Table is full\n");
     start_wifi_mqtt();
-    ESP_LOGI("progress", "Starting Wifi");
-    start_wifi();
-
-    ESP_LOGI("progress", "Starting Clock");
-    start_clock();
-
-    ESP_LOGI("progress", "Starting MQTT");
-    start_mqtt();
-    //sendTableToMQTT();
+    sendTableToMQTT();
+    printf("Sent table\n");
   }
 
   // setup wakeup and go back to sleep
