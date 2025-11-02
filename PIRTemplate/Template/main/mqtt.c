@@ -22,14 +22,17 @@
 #include "mqtt_client.h"
 #include "main.h"
 #include "gauge.h"
+#include "mqtt.h"
 
-
+#include "event_table.h"
 
 esp_mqtt_client_handle_t mqtt_client = NULL;
 EventGroupHandle_t mqtt_event_group;
 static int qos_test = 1;
 
 const static int CONNECTED_BIT = BIT0;
+extern char device_topic[20];
+extern char device_key[800];
 
 void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
   esp_mqtt_event_t *data = (esp_mqtt_event_t *)event_data;
@@ -85,7 +88,7 @@ void start_mqtt(void) {
   mqtt_cfg.session.protocol_ver = MQTT_PROTOCOL_V_3_1_1;
   mqtt_cfg.credentials.username = "JWT";
   mqtt_cfg.network.timeout_ms = 30000;
-  mqtt_cfg.credentials.authentication.password = DEVICE_KEY;
+  mqtt_cfg.credentials.authentication.password = device_key;
 
   ESP_LOGI("mqtt", "[APP] Free memory: %d bytes", esp_get_free_heap_size());
   mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
@@ -105,9 +108,9 @@ void sendPIReventToMQTT(void) {
   char msg[150];
   time(&now);
 
-  int size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", now * 1000, LOCATION_ID);
-  ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, DEVICE_TOPIC);
-  auto err = esp_mqtt_client_publish(mqtt_client, DEVICE_TOPIC, msg, size, 1, 0);
+  int size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", now * 1000, location);
+  ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
+  auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, size, 1, 0);
   if (err == -1) {
     printf("Error while publishing to mqtt\n");
     ESP_LOGI("functions", "SendToMqttFunction terminated");
@@ -122,11 +125,69 @@ void sendBatteryStatusToMQTT(void) {
   time(&now);
 
   int size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"battery\",\"values\":[{\"timestamp\":%llu, \"voltage\":%.1f, \"soc\":%.1f}]}]}", now * 1000, voltage, rsoc);
-  ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, DEVICE_TOPIC);
-  auto err = esp_mqtt_client_publish(mqtt_client, DEVICE_TOPIC, msg, size, 1, 0);
+  ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
+  auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, size, 1, 0);
   if (err == -1) {
     printf("Error while publishing to mqtt\n");
     ESP_LOGI("functions", "SendToMqttFunction terminated");
     return ESP_FAIL;
+  }
+}
+
+void sendDoorEventToMQTT(void) {
+  time_t now = 0;
+
+  char msg[150];
+  time(&now);
+
+  int size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":%s}]}]}", now * 1000, location);
+  ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
+  auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, size, 1, 0);
+  if (err == -1) {
+    printf("Error while publishing to mqtt\n");
+    ESP_LOGI("functions", "SendToMqttFunction terminated");
+    return ESP_FAIL;
+  }
+}
+
+void sendTableToMQTT(void){
+  char msg[150];
+  int size;
+  for (int i=0; i<TABLE_SIZE; i++){
+    EventTableData entry = event_table[i];
+    switch (entry.type){
+
+      case PIRDATA:
+        PIRData pir_data = {0};
+        memcpy(&pir_data, &(entry.payload), entry.len);
+        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", pir_data.timestamp, pir_data.roomID);
+        break;
+      
+      case DOORDATA:
+        DoorData door_data = {0};
+        memcpy(&door_data, &(entry.payload), entry.len);
+        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":%s}]}]}", door_data.timestamp, door_data.roomID);
+        break;
+      
+      case AIRDATA:
+        AirData air_data = {0};
+        memcpy(&air_data, &(entry.payload), entry.len);
+        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f}]}]}", air_data.timestamp, air_data.hum, air_data.temp, air_data.roomID);
+        break;
+      
+      case BATDATA:
+        RSOC bat_data = {0};
+        memcpy(&bat_data, &(entry.payload), entry.len);
+        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"battery\",\"values\":[{\"timestamp\":%llu, \"voltage\":%.1f, \"soc\":%.1f}]}]}", bat_data.timestamp, bat_data.voltage, bat_data.soc);
+        break;
+    }
+
+    auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, size, 1, 0);
+    if (err == -1) {
+      printf("Error while publishing to mqtt\n");
+      ESP_LOGE("functions", "SendToMqttFunction terminated");
+      return ESP_FAIL;
+    }
+    ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
   }
 }
