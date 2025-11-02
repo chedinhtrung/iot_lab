@@ -166,7 +166,7 @@ void sendTableToMQTT(void){
       case DOORDATA:
         DoorData door_data = {0};
         memcpy(&door_data, &(entry.payload), entry.len);
-        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":%s}]}]}", door_data.timestamp, door_data.roomID);
+        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", door_data.timestamp, door_data.roomID);
         break;
       
       case AIRDATA:

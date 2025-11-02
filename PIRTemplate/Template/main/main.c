@@ -32,6 +32,7 @@ uint64_t mac_int = 0;
 char location[40] = {0};
 char device_topic[20];
 char device_key[800];
+int table_full = 0;
 
 void start_wifi_mqtt(){
   ESP_LOGI("progress", "Starting Wifi");
@@ -45,7 +46,7 @@ void start_wifi_mqtt(){
 }
 
 void app_main() {
-  //gpio_set_direction(LED, GPIO_MODE_OUTPUT);
+  gpio_set_direction(LED, GPIO_MODE_OUTPUT);
   // log level stuff 
   ESP_LOGI("progress", "[APP] Free memory: %d bytes", esp_get_free_heap_size());
   ESP_LOGI("progress", "[APP] IDF version: %s", esp_get_idf_version());
@@ -96,6 +97,8 @@ void app_main() {
   }
 
   printf("Woke up because %i \n", wc);
+  gpio_set_level(LED, 0);
+  
   // TODO: handle first plugged in (not a wakeup)
   if (wuc == POWER){
     ESP_LOGI("progress", "Starting Wifi");
@@ -124,30 +127,17 @@ void app_main() {
   // TODO: check ble tag (device independent)
 
   // TODO: record event into event table
-  int table_full = 0;
-  if (mac_int == DEV_A_MAC){      // PIR event for device A
-    
+
+  if (mac_int == DEV_A_MAC && wuc == EXTI0){      // PIR event for device A
+    record_pir_data();
   }
 
-  else if (mac_int == DEV_B_MAC){      // Door event for device B
-
+  else if (mac_int == DEV_B_MAC && wuc == EXTI0){      // Door event for device B
+    record_door_data();
   }
 
   else if (mac_int == DEV_C_MAC && wuc == EXTI0){      // PIR event for device C
-  
-    PIRData d = {0}; 
-    time_t now = 0;
-    time(&now);
-    d.timestamp = now * 1000;
-    strcpy(&(d.roomID), location);
-    table_full = put_data(PIRDATA, sizeof(PIRData), &d);
-    printf("Recorded into table at index %i \n", table_index);
-    if (table_index > 0){
-      PIRData d1;
-      memcpy(&d1, &(event_table[table_index - 1].payload), event_table[table_index - 1].len);
-      printf("Content: timestamp %llu \n", d1.timestamp);
-    }
-   
+    record_pir_data();
   }
 
   // TODO: if table is full, send the events in the table (device independent)
@@ -159,7 +149,12 @@ void app_main() {
   }
 
   // setup wakeup and go back to sleep
+  set_wakeup_then_sleep();
+  
+}
 
+void set_wakeup_then_sleep(void)
+{
   ESP_ERROR_CHECK(gpio_set_direction(PIR_PIN, GPIO_MODE_INPUT));
   ESP_ERROR_CHECK(rtc_gpio_pulldown_en(PIR_PIN));
 
@@ -169,6 +164,26 @@ void app_main() {
   }
   ESP_ERROR_CHECK(esp_sleep_enable_ext0_wakeup(PIR_PIN, 1));
   ESP_LOGI("progress", "Going to sleep");
+  gpio_set_level(LED, 1);
   esp_deep_sleep_start();
 }
 
+void record_pir_data(void){
+  PIRData d = {0}; 
+  time_t now = 0;
+  time(&now);
+  d.timestamp = now * 1000;
+  strcpy(&(d.roomID), location);
+  table_full = put_data(PIRDATA, sizeof(PIRData), &d);
+  printf("Recorded PIR into table at index %i \n", table_index);
+}
+
+void record_door_data(void){
+  DoorData d = {0}; 
+  time_t now = 0;
+  time(&now);
+  d.timestamp = now * 1000;
+  strcpy(&(d.roomID), location);
+  table_full = put_data(DOORDATA, sizeof(DoorData), &d);
+  printf("Recorded Door into table at index %i \n", table_index);
+}
