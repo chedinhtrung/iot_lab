@@ -4,6 +4,22 @@
         "table.h": "c",
         "esp_attr.h": "c",
         "i2cdev.h": "c",
-        "nvs_flash.h": "c"
+        "nvs_flash.h": "c",
+        "ds3231.h": "c",
+        "condition_variable": "c",
+        "ctime": "c",
+        "mutex": "c",
+        "charconv": "cpp",
+        "chrono": "cpp",
+        "format": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "limits": "cpp",
+        "numeric": "cpp",
+        "ratio": "cpp",
+        "streambuf": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "*.inc": "cpp"
     }
 }

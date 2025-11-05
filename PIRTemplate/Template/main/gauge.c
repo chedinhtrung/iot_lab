@@ -44,7 +44,7 @@ static esp_err_t initialize_lc709203f() {
 
 void getRSOC() {
   uint16_t voltage_u = 0, rsoc_u = 0;
-  ESP_ERROR_CHECK(i2cdev_init());
+  //ESP_ERROR_CHECK(i2cdev_init());
   initialize_lc709203f();
 
   int count = 0;

@@ -12,7 +12,6 @@ i2c_dev_t co2sensordev = {
 CO2_Data read_co2_sensor()
 {
     // get data ready status 
-    co2sensordev.cfg = i2c_conf;
     uint16_t status;
     int tries = 0;
     while (!status && tries < 5){
