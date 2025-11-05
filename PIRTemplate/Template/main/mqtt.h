@@ -9,4 +9,4 @@ void start_mqtt(void);
 void sendPIReventToMQTT(void);
 void sendBatteryStatusToMQTT(void);
 void sendDoorEventToMQTT(void);
-void sendTableToMQTT(void);
+int sendTableToMQTT(void);

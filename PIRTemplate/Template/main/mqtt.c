@@ -150,8 +150,8 @@ void sendDoorEventToMQTT(void) {
   }
 }
 
-void sendTableToMQTT(void){
-  char msg[150];
+int sendTableToMQTT(void){
+  char msg[200];
   int size;
   for (int i=0; i<TABLE_SIZE; i++){
     EventTableData entry = event_table[i];
@@ -172,7 +172,7 @@ void sendTableToMQTT(void){
       case AIRDATA:
         AirData air_data = {0};
         memcpy(&air_data, &(entry.payload), entry.len);
-        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f}]}]}", air_data.timestamp, air_data.hum, air_data.temp, air_data.roomID);
+        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f, \"temp\":%.1f, \"hum\":%.1f, \"roomID\":\"%s\"}]}]}", air_data.timestamp, air_data.co2, air_data.temp, air_data.hum, air_data.roomID);
         break;
       
       case BATDATA:
@@ -190,5 +190,4 @@ void sendTableToMQTT(void){
     }
     ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
   }
-  clear_table();
 }

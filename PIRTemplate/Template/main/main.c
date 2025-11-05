@@ -16,8 +16,11 @@
 #include "esp_sleep.h"
 #include "event_table.h"
 
+#include <driver/i2c.h>
 
 #include "esp_mac.h"
+#include "co2.h"
+
 #define LED 17
 
 typedef enum {
@@ -34,19 +37,20 @@ char device_topic[20];
 char device_key[800];
 int table_full = 0;
 
-void start_wifi_mqtt(){
-  ESP_LOGI("progress", "Starting Wifi");
-  start_wifi();
-
-  ESP_LOGI("progress", "Starting Clock");
-  start_clock();
-
-  ESP_LOGI("progress", "Starting MQTT");
-  start_mqtt();
-}
+i2c_config_t i2c_conf = {
+    .mode = I2C_MODE_MASTER,
+    .sda_io_num = 15,         // select GPIO specific to your project
+    .sda_pullup_en = GPIO_PULLUP_ENABLE,
+    .scl_io_num = 14,         // select GPIO specific to your project
+    .scl_pullup_en = GPIO_PULLUP_ENABLE,
+    .master.clk_speed = 100000,  // select frequency specific to your project
+};
 
 void app_main() {
   gpio_set_direction(LED, GPIO_MODE_OUTPUT);
+  // setup i2c master
+  //i2c_init();
+  ESP_ERROR_CHECK(i2cdev_init());
   // log level stuff 
   ESP_LOGI("progress", "[APP] Free memory: %d bytes", esp_get_free_heap_size());
   ESP_LOGI("progress", "[APP] IDF version: %s", esp_get_idf_version());
@@ -79,6 +83,7 @@ void app_main() {
     strcpy(location, "fish");
     strcpy(device_topic, DEVICE_TOPIC_FISH);
     strcpy(device_key, DEVICE_KEY_FISH);
+    init_co2_sensor();
   } else if (mac_int == DEV_B_MAC){
     strcpy(location, "door");
     strcpy(device_topic, DEVICE_TOPIC_DOOR);
@@ -138,14 +143,13 @@ void app_main() {
 
   else if (mac_int == DEV_C_MAC && wuc == EXTI0){      // PIR event for device C
     record_pir_data();
-  }
-
-  // TODO: if table is full, send the events in the table (device independent)
-  if (table_full){
-    printf("Table is full\n");
-    start_wifi_mqtt();
-    sendTableToMQTT();
-    printf("Sent table\n");
+    CO2_Data data = read_co2_sensor();
+    if (data.valid){
+      printf("CO2: %f, temp: %f, hum:%f", data.co2, data.temp, data.hum);
+      record_air_data(data);
+    } else {
+      printf("Data invalid");
+    }
   }
 
   // setup wakeup and go back to sleep
@@ -168,6 +172,21 @@ void set_wakeup_then_sleep(void)
   esp_deep_sleep_start();
 }
 
+void i2c_init(void){
+  i2c_driver_install(0, i2c_conf.mode, 0, 0, 0);
+}
+
+void start_wifi_mqtt(){
+  ESP_LOGI("progress", "Starting Wifi");
+  start_wifi();
+
+  ESP_LOGI("progress", "Starting Clock");
+  start_clock();
+
+  ESP_LOGI("progress", "Starting MQTT");
+  start_mqtt();
+}
+
 void record_pir_data(void){
   PIRData d = {0}; 
   time_t now = 0;
@@ -176,6 +195,39 @@ void record_pir_data(void){
   strcpy(&(d.roomID), location);
   table_full = put_data(PIRDATA, sizeof(PIRData), &d);
   printf("Recorded PIR into table at index %i \n", table_index);
+
+  if (table_full){
+    printf("Table is full\n");
+    start_wifi_mqtt();
+    int send_success = sendTableToMQTT();
+    if (send_success != -1){
+        clear_table();
+        printf("Sent table\n");
+    }
+  }
+}
+
+void record_air_data(CO2_Data data){
+  AirData d = {0}; 
+  time_t now = 0;
+  time(&now);
+  d.timestamp = now * 1000;
+  strcpy(&(d.roomID), location);
+  d.co2 = data.co2;
+  d.temp = data.temp;
+  d.hum = data.hum;
+  table_full = put_data(AIRDATA, sizeof(AirData), &d);
+  printf("Recorded Air into table at index %i \n", table_index);
+
+  if (table_full){
+    printf("Table is full\n");
+    start_wifi_mqtt();
+    int send_success = sendTableToMQTT();
+    if (send_success != -1){
+        clear_table();
+        printf("Sent table\n");
+    }
+  }
 }
 
 void record_door_data(void){
@@ -186,4 +238,14 @@ void record_door_data(void){
   strcpy(&(d.roomID), location);
   table_full = put_data(DOORDATA, sizeof(DoorData), &d);
   printf("Recorded Door into table at index %i \n", table_index);
+
+  if (table_full){
+    printf("Table is full\n");
+    start_wifi_mqtt();
+    int send_success = sendTableToMQTT();
+    if (send_success != -1){
+        clear_table();
+        printf("Sent table\n");
+    }
+  }
 }
