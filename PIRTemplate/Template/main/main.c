@@ -97,7 +97,7 @@ void app_main() {
 
   printf("Woke up because %i \n", wc);
   gpio_set_level(LED, 0);
-
+  vTaskDelay(pdMS_TO_TICKS(1000));
   // TODO: handle first plugged in (not a wakeup)
   if (wuc == POWER){
     printf("Power up");
@@ -135,7 +135,10 @@ void app_main() {
     ds3231_set_alarm(&i2c_rtc, DS3231_ALARM_1, &time, DS3231_ALARM1_MATCH_SECMINHOUR, 0, 0);
     ESP_ERROR_CHECK(gpio_set_direction(RTC_WU_PIN, GPIO_MODE_INPUT));
     ESP_ERROR_CHECK(rtc_gpio_pullup_en(RTC_WU_PIN));
-    ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup((1ULL << 33), 0));
+    ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup((1ULL << RTC_WU_PIN), 0));
+    ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
+    ds3231_enable_alarm_ints(&i2c_rtc, DS3231_ALARM_1);
+
 
   } else if (mac_int == DEV_C_MAC){
     strcpy(location, "fish");
@@ -144,13 +147,16 @@ void app_main() {
     init_co2_sensor();
     struct tm time = {
       .tm_hour = 8,
-      .tm_min  = 0,
+      .tm_min  = 31,
       .tm_sec  = 0
     };
     ds3231_set_alarm(&i2c_rtc, DS3231_ALARM_1, &time, DS3231_ALARM1_MATCH_SECMIN, 0, 0);
     ESP_ERROR_CHECK(gpio_set_direction(RTC_WU_PIN, GPIO_MODE_INPUT));
     ESP_ERROR_CHECK(rtc_gpio_pullup_en(RTC_WU_PIN));
     ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup((1ULL << 33), 0));
+    ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
+    ds3231_enable_alarm_ints(&i2c_rtc, DS3231_ALARM_1);
+
   } else if (mac_int == DEV_B_MAC){
     strcpy(location, "door");
     strcpy(device_topic, DEVICE_TOPIC_DOOR);
@@ -160,6 +166,8 @@ void app_main() {
 
   // handle periodic wakeup for battery status (only gold esp)
   if (mac_int == DEV_A_MAC && wuc == EXTI1){
+    ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
+    ds3231_enable_alarm_ints(&i2c_rtc, DS3231_ALARM_1);
     getRSOC();
     start_wifi_mqtt();
     sendBatteryStatusToMQTT();
@@ -167,6 +175,8 @@ void app_main() {
 
   // TODO: handle periodic wakeup for CO2, Humidity and Temp (only device C)
   else if (mac_int == DEV_C_MAC && wuc == EXTI1){
+    ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
+    ds3231_enable_alarm_ints(&i2c_rtc, DS3231_ALARM_1);
     printf("Hourly record of CO2");
     CO2_Data data = read_co2_sensor();
     if (data.valid){

@@ -14,7 +14,7 @@ CO2_Data read_co2_sensor()
     // get data ready status 
     uint16_t status;
     int tries = 0;
-    while (!status && tries < 5){
+    while (!status && tries < 30){
         uint8_t cmd[2] = {0xE4, 0xB8};
         i2c_dev_write(&co2sensordev, cmd, 1, cmd+1, sizeof(cmd));
         vTaskDelay(pdMS_TO_TICKS(5));
@@ -25,7 +25,7 @@ CO2_Data read_co2_sensor()
         tries++;
         if (!status){vTaskDelay(pdMS_TO_TICKS(1000));}
     }
-    if (tries == 5){
+    if (tries == 30){
         CO2_Data invalid = {0};
         return invalid;
     }
