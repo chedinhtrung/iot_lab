@@ -1,0 +1,13 @@
+{
+    "sensors": [
+        {
+            "name": "PIR",
+            "values": [
+                {
+                    "timestamp": 1762696412000,
+                    "roomID": "desk"
+                }
+            ]
+        }
+    ]
+}

@@ -1,5 +1,5 @@
 #pragma once 
-#define TABLE_SIZE 10
+#define TABLE_SIZE 1
 
 #include <stdint.h>
 #include <string.h>

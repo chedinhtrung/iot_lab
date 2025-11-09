@@ -151,18 +151,24 @@ void sendDoorEventToMQTT(void) {
 }
 
 int sendTableToMQTT(void){
-  char msg[200];
+  char msg[150*TABLE_SIZE];     // Buffer for the giant message
+  char entry_str[150];
   int size;
+  // copy the initial part 
+  strcpy(msg, "{\"sensors\":[");
+  
   for (int i=0; i<TABLE_SIZE; i++){
     EventTableData entry = event_table[i];
     switch (entry.type){
-
       case PIRDATA:
         PIRData pir_data = {0};
         memcpy(&pir_data, &(entry.payload), entry.len);
-        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", pir_data.timestamp, pir_data.roomID);
+        //size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", pir_data.timestamp, pir_data.roomID);
+        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}", pir_data.timestamp, pir_data.roomID);
+        strcpy(msg+strlen(msg), entry_str);
         break;
       
+      /*
       case DOORDATA:
         DoorData door_data = {0};
         memcpy(&door_data, &(entry.payload), entry.len);
@@ -180,14 +186,19 @@ int sendTableToMQTT(void){
         memcpy(&bat_data, &(entry.payload), entry.len);
         size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"battery\",\"values\":[{\"timestamp\":%llu, \"voltage\":%.1f, \"soc\":%.1f}]}]}", bat_data.timestamp, bat_data.voltage, bat_data.soc);
         break;
+      */
     }
-
-    auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, size, 1, 0);
-    if (err == -1) {
-      printf("Error while publishing to mqtt\n");
-      ESP_LOGE("functions", "SendToMqttFunction terminated");
-      return ESP_FAIL;
+    if (i != TABLE_SIZE-1){
+      strcpy(msg+strlen(msg), ",");
     }
-    ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
   }
+  // close the brackets 
+  strcpy(msg+strlen(msg), "]}");
+  auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, sizeof(msg), 1, 0);
+  if (err == -1) {
+    printf("Error while publishing to mqtt\n");
+    ESP_LOGE("functions", "SendToMqttFunction terminated");
+    return ESP_FAIL;
+  }
+  ESP_LOGI("mqtt", "Sent <%s> to topic %s", msg, device_topic);
 }

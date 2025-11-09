@@ -82,7 +82,7 @@ void app_main() {
 
   printf("Woke up because %i \n", wuc);
 
-  // Blink the led to signal 
+  // Blink the led to signal. shut down if want to have low power
   { 
   gpio_set_level(LED, 0);
   vTaskDelay(pdMS_TO_TICKS(1000));
