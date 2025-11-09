@@ -1,13 +1,2 @@
-{
-    "sensors": [
-        {
-            "name": "PIR",
-            "values": [
-                {
-                    "timestamp": 1762696412000,
-                    "roomID": "desk"
-                }
-            ]
-        }
-    ]
-}
+{"sensors":[{"name":"PIR","values":[{"timestamp":1762697174000, "roomID":"desk"}]}]}
+{"sensors":[{"name":"PIR","values":[{"timestamp":1762697316000, "roomID":"desk"}]}]}

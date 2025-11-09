@@ -151,8 +151,8 @@ void sendDoorEventToMQTT(void) {
 }
 
 int sendTableToMQTT(void){
-  char msg[150*TABLE_SIZE];     // Buffer for the giant message
-  char entry_str[150];
+  char msg[200*TABLE_SIZE];     // Buffer for the giant message
+  char entry_str[200];
   int size;
   // copy the initial part 
   strcpy(msg, "{\"sensors\":[");
@@ -163,30 +163,24 @@ int sendTableToMQTT(void){
       case PIRDATA:
         PIRData pir_data = {0};
         memcpy(&pir_data, &(entry.payload), entry.len);
-        //size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", pir_data.timestamp, pir_data.roomID);
         size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"PIR\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}", pir_data.timestamp, pir_data.roomID);
         strcpy(msg+strlen(msg), entry_str);
         break;
       
-      /*
       case DOORDATA:
         DoorData door_data = {0};
         memcpy(&door_data, &(entry.payload), entry.len);
-        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}]}", door_data.timestamp, door_data.roomID);
+        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}", pir_data.timestamp, pir_data.roomID);
+        strcpy(msg+strlen(msg), entry_str);
         break;
-      
+        
       case AIRDATA:
         AirData air_data = {0};
         memcpy(&air_data, &(entry.payload), entry.len);
-        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f, \"temp\":%.1f, \"hum\":%.1f, \"roomID\":\"%s\"}]}]}", air_data.timestamp, air_data.co2, air_data.temp, air_data.hum, air_data.roomID);
+        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f, \"temp\":%.1f, \"hum\":%.1f, \"roomID\":\"%s\"}]}", pir_data.timestamp, pir_data.roomID);
+        strcpy(msg+strlen(msg), entry_str);
         break;
       
-      case BATDATA:
-        RSOC bat_data = {0};
-        memcpy(&bat_data, &(entry.payload), entry.len);
-        size = snprintf(msg, sizeof(msg), "{\"sensors\":[{\"name\":\"battery\",\"values\":[{\"timestamp\":%llu, \"voltage\":%.1f, \"soc\":%.1f}]}]}", bat_data.timestamp, bat_data.voltage, bat_data.soc);
-        break;
-      */
     }
     if (i != TABLE_SIZE-1){
       strcpy(msg+strlen(msg), ",");
@@ -194,7 +188,7 @@ int sendTableToMQTT(void){
   }
   // close the brackets 
   strcpy(msg+strlen(msg), "]}");
-  auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, sizeof(msg), 1, 0);
+  auto err = esp_mqtt_client_publish(mqtt_client, device_topic, msg, strlen(msg), 1, 0);
   if (err == -1) {
     printf("Error while publishing to mqtt\n");
     ESP_LOGE("functions", "SendToMqttFunction terminated");
