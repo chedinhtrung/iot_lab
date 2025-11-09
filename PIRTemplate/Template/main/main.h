@@ -28,3 +28,9 @@
 #define DEV_A_MAC 259907273942976
 #define DEV_B_MAC 163524408132084
 #define DEV_C_MAC 163524409355540
+
+#define LED 17
+#define RTC_WU_PIN 33
+#define SDA_PIN 14
+#define SCL_PIN 15
+

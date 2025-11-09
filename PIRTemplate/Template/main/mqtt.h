@@ -3,7 +3,7 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 
-extern char location[40];
+extern char location[10];
 
 void start_mqtt(void);
 void sendPIReventToMQTT(void);
