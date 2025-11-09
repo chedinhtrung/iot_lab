@@ -166,6 +166,7 @@ void app_main() {
 
   // TODO: handle periodic wakeup for CO2, Humidity and Temp (only device C)
   if (mac_int == DEV_C_MAC && wuc == EXTI1){
+    init_co2_sensor();
     ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
     ds3231_enable_alarm_ints(&i2c_rtc, DS3231_ALARM_1);
     printf("Hourly record of CO2");
@@ -196,6 +197,7 @@ void app_main() {
   }
 
   if (mac_int == DEV_C_MAC && wuc == EXTI0){      // PIR event for device C
+    init_co2_sensor();
     record_pir_data();
     CO2_Data data = read_co2_sensor();
     if (data.valid){

@@ -1,2 +1,55 @@
-{"sensors":[{"name":"PIR","values":[{"timestamp":1762697174000, "roomID":"desk"}]}]}
-{"sensors":[{"name":"PIR","values":[{"timestamp":1762697316000, "roomID":"desk"}]}]}
+{
+    "sensors": [
+        {
+            "name": "PIR",
+            "values": [
+                {
+                    "timestamp": 1762699272000,
+                    "roomID": "fish"
+                }
+            ]
+        },
+        {
+            "name": "air",
+            "values": [
+                {
+                    "timestamp": 1762699272000,
+                    "co2": 1333.0,
+                    "temp": 18.4,
+                    "hum": 64.8,
+                    "roomID": "fish"
+                }
+            ]
+        },
+        {
+            "name": "PIR",
+            "values": [
+                {
+                    "timestamp": 1762699281000,
+                    "roomID": "fish"
+                }
+            ]
+        },
+        {
+            "name": "air",
+            "values": [
+                {
+                    "timestamp": 1762699286000,
+                    "co2": 1115.0,
+                    "temp": 22.4,
+                    "hum": 51.3,
+                    "roomID": "fish"
+                }
+            ]
+        },
+        {
+            "name": "PIR",
+            "values": [
+                {
+                    "timestamp": 1762699292000,
+                    "roomID": "fish"
+                }
+            ]
+        }
+    ]
+}

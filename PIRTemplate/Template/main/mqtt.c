@@ -170,14 +170,14 @@ int sendTableToMQTT(void){
       case DOORDATA:
         DoorData door_data = {0};
         memcpy(&door_data, &(entry.payload), entry.len);
-        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}", pir_data.timestamp, pir_data.roomID);
+        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"door\",\"values\":[{\"timestamp\":%llu, \"roomID\":\"%s\"}]}", door_data.timestamp, door_data.roomID);
         strcpy(msg+strlen(msg), entry_str);
         break;
         
       case AIRDATA:
         AirData air_data = {0};
         memcpy(&air_data, &(entry.payload), entry.len);
-        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f, \"temp\":%.1f, \"hum\":%.1f, \"roomID\":\"%s\"}]}", pir_data.timestamp, pir_data.roomID);
+        size = snprintf(entry_str, sizeof(entry_str), "{\"name\":\"air\",\"values\":[{\"timestamp\":%llu, \"co2\":%.1f, \"temp\":%.1f, \"hum\":%.1f, \"roomID\":\"%s\"}]}", air_data.timestamp, air_data.co2, air_data.temp, air_data.hum, air_data.roomID);
         strcpy(msg+strlen(msg), entry_str);
         break;
       
