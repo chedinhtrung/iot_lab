@@ -6,8 +6,10 @@
 #include "freertos/task.h"
 
 #define BLINK_GPIO 17
+#include "esp_sleep.h"
 
 void app_main(void) {
+  /*
   esp_log_level_set("*", ESP_LOG_ERROR);
   esp_log_level_set("led", ESP_LOG_INFO);
 
@@ -21,5 +23,7 @@ void app_main(void) {
     ESP_LOGI("led", "LED OFF");
     gpio_set_level(BLINK_GPIO, 0);
     vTaskDelay(pdMS_TO_TICKS(500));
-  }
+    
+  }*/
+  esp_deep_sleep_start();
 }

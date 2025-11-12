@@ -1,4 +1,4 @@
-idf_component_register(SRCS main.c wifi.c sntp.c mqtt.c gauge.c event_table.c co2.c
+idf_component_register(SRCS main.c wifi.c sntp.c mqtt.c gauge.c event_table.c co2.c ota.c rest_client.c
 					EMBED_TXTFILES 
                     INCLUDE_DIRS "."
-                    REQUIRES esp_event esp_wifi mqtt nvs_flash driver lc709203f) 
+                    REQUIRES esp_event esp_wifi mqtt nvs_flash driver lc709203f esp_https_ota esp_partition json esp_http_client esp_event esp_netif) 

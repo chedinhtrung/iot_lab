@@ -24,6 +24,7 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include "esp_pm.h"
 
 typedef enum {
   POWER,
@@ -51,6 +52,13 @@ i2c_config_t i2c_conf = {
 i2c_dev_t i2c_rtc;
 
 void app_main() {
+  // enable light sleep
+  esp_pm_config_esp32_t pm_config = {
+    .max_freq_mhz = 240,
+    .min_freq_mhz = 80,
+    .light_sleep_enable = true,
+  };
+  //esp_pm_configure(&pm_config);
 
   // misc. setups
   gpio_set_direction(LED, GPIO_MODE_OUTPUT);
@@ -150,6 +158,8 @@ void app_main() {
       strcpy(device_key, DEVICE_KEY_DOOR);
     }
     printf("roomID: %s \n", location);
+
+    // configure OTA
     set_wakeup_then_sleep();
   }
   
@@ -183,6 +193,8 @@ void app_main() {
   // handle event wakeup
 
   // TODO: check ble tag (device independent)
+
+  // TODO: Check OTA update
 
   // record event into event table
 
