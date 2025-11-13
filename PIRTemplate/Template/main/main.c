@@ -23,6 +23,7 @@
 #include <ds3231.h>
 #include <time.h>
 #include <sys/time.h>
+#include "ble.h"
 
 #include "esp_pm.h"
 
@@ -51,8 +52,13 @@ i2c_config_t i2c_conf = {
 
 i2c_dev_t i2c_rtc;
 
+extern bool scan_done;
+extern bool tag_found;
+extern int bt_rssi;
+
 void app_main() {
-  // enable light sleep
+
+    // enable light sleep
   esp_pm_config_esp32_t pm_config = {
     .max_freq_mhz = 240,
     .min_freq_mhz = 80,
@@ -192,7 +198,14 @@ void app_main() {
 
   // handle event wakeup
 
-  // TODO: check ble tag (device independent)
+  // check ble tag (only for device B)
+  if (mac_int == DEV_B_MAC){
+    scan_ble();
+    if (!(tag_found && bt_rssi >= RSSI_TH)){
+      set_wakeup_then_sleep();
+    }
+  }
+ 
 
   // TODO: Check OTA update
 
@@ -223,7 +236,6 @@ void app_main() {
 
   // setup wakeup and go back to sleep
   set_wakeup_then_sleep();
-  
 }
 
 void init_rtc(struct tm time){

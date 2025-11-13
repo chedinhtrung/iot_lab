@@ -34,3 +34,4 @@
 #define SDA_PIN 14
 #define SCL_PIN 15
 
+#define RSSI_TH -69
