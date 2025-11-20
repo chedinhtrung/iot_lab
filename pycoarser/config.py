@@ -1,0 +1,11 @@
+MIN_STAY_DURATION = 15
+MAX_IDLE_TIME = 5
+
+MAX_AWAY_TIME = 10
+AGGR_FREQ = 30
+GENESIS_TIME = "2025-11-19T15:12:44.000Z"
+
+org = "wise2025"
+token = "8uBHEkrfX5j62cXcwlYdDticnx8QaTXQyW0ONBe1ebGS9Stxh0_32FbAjPx9Rfk5bqppNseTFAHJG2Qx3O8vRw=="
+# Store the URL of your InfluxDB instance
+url="http://192.168.0.103:8086"
