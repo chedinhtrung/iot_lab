@@ -148,7 +148,7 @@ void app_main() {
       init_co2_sensor();
       struct tm time = {
         .tm_hour = 8,
-        .tm_min  = 31,
+        .tm_min  = 34,
         .tm_sec  = 0
       };
       ds3231_set_alarm(&i2c_rtc, DS3231_ALARM_1, &time, DS3231_ALARM1_MATCH_SECMIN, 0, 0);
@@ -182,7 +182,9 @@ void app_main() {
 
   // TODO: handle periodic wakeup for CO2, Humidity and Temp (only device C)
   if (mac_int == DEV_C_MAC && wuc == EXTI1){
-    init_co2_sensor();
+    //init_co2_sensor();
+    co2sensordev.cfg = i2c_conf;
+    ESP_ERROR_CHECK(i2c_dev_create_mutex(&co2sensordev));
     ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
     ds3231_enable_alarm_ints(&i2c_rtc, DS3231_ALARM_1);
     printf("Hourly record of CO2");
@@ -222,7 +224,9 @@ void app_main() {
   }
 
   if (mac_int == DEV_C_MAC && wuc == EXTI0){      // PIR event for device C
-    init_co2_sensor();
+    //init_co2_sensor();
+    co2sensordev.cfg = i2c_conf;
+    ESP_ERROR_CHECK(i2c_dev_create_mutex(&co2sensordev));
     record_pir_data();
     CO2_Data data = read_co2_sensor();
     if (data.valid){

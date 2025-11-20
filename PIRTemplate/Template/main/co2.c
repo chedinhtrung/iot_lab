@@ -16,12 +16,12 @@ CO2_Data read_co2_sensor()
     int tries = 0;
     while (!status && tries < 30){
         uint8_t cmd[2] = {0xE4, 0xB8};
-        i2c_dev_write(&co2sensordev, cmd, 1, cmd+1, sizeof(cmd));
+        i2c_dev_write(&co2sensordev, NULL, 0, cmd, 2);
         vTaskDelay(pdMS_TO_TICKS(5));
         uint8_t resp[3];
         i2c_dev_read(&co2sensordev, NULL, 0, resp, sizeof(resp));
         status = (resp[0] << 8) | resp[1];
-        status = status << 11;
+        status = status << 5;
         tries++;
         if (!status){vTaskDelay(pdMS_TO_TICKS(1000));}
     }
@@ -30,7 +30,7 @@ CO2_Data read_co2_sensor()
         return invalid;
     }
     uint8_t cmd[2] = {0xec, 0x05};
-    i2c_dev_write(&co2sensordev, cmd, 1, cmd+1, sizeof(cmd));
+    i2c_dev_write(&co2sensordev, NULL, 0, cmd, 2);
     vTaskDelay(pdMS_TO_TICKS(5));
     uint8_t resp[9];
     i2c_dev_read(&co2sensordev, NULL, 0, resp, sizeof(resp));
@@ -50,9 +50,9 @@ CO2_Data read_co2_sensor()
 void init_co2_sensor()
 {
     co2sensordev.cfg = i2c_conf;
-    ESP_ERROR_CHECK(i2c_dev_create_mutex(&co2sensordev));
+   
     // start low power mode reads 
     uint8_t cmd[2] = {0x21, 0xac};
-    i2c_dev_write(&co2sensordev, cmd, 1, cmd+1, sizeof(cmd));
+    i2c_dev_write(&co2sensordev, NULL, 0, cmd, 2);
 }
 

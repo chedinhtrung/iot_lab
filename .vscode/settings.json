@@ -21,6 +21,7 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "*.inc": "cpp",
-        "esp_gap_ble_api.h": "c"
+        "esp_gap_ble_api.h": "c",
+        "esp_log.h": "c"
     }
 }
