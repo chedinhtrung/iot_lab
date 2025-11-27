@@ -1,11 +1,38 @@
-MIN_STAY_DURATION = 15
-MAX_IDLE_TIME = 5
 
-MAX_AWAY_TIME = 10
-AGGR_FREQ = 30
-GENESIS_TIME = "2025-11-19T15:12:44.000Z"
-
-org = "wise2025"
-token = "8uBHEkrfX5j62cXcwlYdDticnx8QaTXQyW0ONBe1ebGS9Stxh0_32FbAjPx9Rfk5bqppNseTFAHJG2Qx3O8vRw=="
+ORG = "wise2025"
+TOKEN = "4BDe2RwBCwebNjxaCDioj7erNOoRiehXM8A2lNWUS6sxt_3pDZGS4cekonyh3EZdrNJ_BypZXl6h9Ncs1MzSmQ=="
 # Store the URL of your InfluxDB instance
-url="http://192.168.0.103:8086"
+URL="http://192.168.0.103:8086"
+
+GENESIS_TIME = "2025-11-19T15:12:44.000Z"
+default_cfg = {
+    "MIN_STAY_DURATION":15,
+    "MAX_IDLE_TIME":5,
+
+    "MAX_AWAY_TIME":10,
+    "AGGR_FREQ":30,
+}
+
+desk_cfg = {
+    "MIN_STAY_DURATION":10,
+    "MAX_IDLE_TIME":7,
+
+    "MAX_AWAY_TIME":15,
+    "AGGR_FREQ":30,
+}
+
+fish_cfg = {
+    "MIN_STAY_DURATION":5,
+    "MAX_IDLE_TIME":15,
+
+    "MAX_AWAY_TIME":10,
+    "AGGR_FREQ":30,
+}
+
+kitchen_cfg = {
+    "MIN_STAY_DURATION":10,
+    "MAX_IDLE_TIME":8,
+
+    "MAX_AWAY_TIME":10,
+    "AGGR_FREQ":30,
+}
