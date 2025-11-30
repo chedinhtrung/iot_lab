@@ -32,10 +32,10 @@ class StayAggregator:
     
     def loop(self):
         while True:
-            #if datetime.now() - self.last_run < self.run_every:
-            #    sleep(AGGR_FREQ * 60)
-            #    continue
-
+            if datetime.now(tz=timezone.utc) - self.last_run < self.run_every:
+                sleep(self.run_every.total_seconds())
+                continue
+            self.last_run =  datetime.now(tz=timezone.utc)
             # start from GENESIS_TIME when the destination bucket is empty
             # aggr_t_start = GENESIS_TIME
             aggr_t_start = "-1d"
@@ -127,10 +127,10 @@ class ActivityAggregator:
 
     def loop(self):
         while True:
-            #if datetime.now() - self.last_run < self.run_every:
-            #    sleep(AGGR_FREQ * 60)
-            #    continue
-
+            if datetime.now(tz=timezone.utc) - self.last_run < self.run_every:
+                sleep(self.run_every.total_seconds())
+                continue
+            self.last_run =  datetime.now(tz=timezone.utc)
             # start from GENESIS_TIME when the destination bucket is empty
             # aggr_t_start = GENESIS_TIME
             aggr_t_start = "-1d"
