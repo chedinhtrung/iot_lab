@@ -14,6 +14,7 @@ static esp_err_t _handle_headers(esp_http_client_handle_t client)
 
 void do_firmware_upgrade()
 {
+    printf("OTA update... \n");
     esp_http_client_config_t config = {
         .url = CONFIG_IOT_PLATFORM_OTA_URL,
         .buffer_size_tx = 1024,
@@ -26,10 +27,12 @@ void do_firmware_upgrade()
     esp_err_t ret = esp_https_ota(&ota_config);
     if (ret == ESP_OK)
     {
+        printf("Successful OTA update\n");
         esp_restart();
     }
     else
     {
+        printf("Failed OTA update\n");
         ESP_LOGE("OTA", "Firmware upgrade failed");
     }
 }

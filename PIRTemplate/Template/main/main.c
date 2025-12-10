@@ -26,6 +26,7 @@
 #include "ble.h"
 
 #include "esp_pm.h"
+#include "ota.h"
 
 typedef enum {
   POWER,
@@ -210,6 +211,7 @@ void app_main() {
  
 
   // TODO: Check OTA update
+  do_firmware_upgrade();
 
   // record event into event table
 
