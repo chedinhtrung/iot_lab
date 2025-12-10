@@ -1,0 +1,6 @@
+apscheduler
+fastapi[standard]
+durationpy
+psutil
+urllib3
+https://github.com/CAPS-IoT/sifec-base.git
