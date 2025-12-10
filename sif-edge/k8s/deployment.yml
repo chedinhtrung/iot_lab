@@ -12,11 +12,9 @@ spec:
       labels:
         app: sif-edge
     spec:
-      imagePullSecrets:
-        - name: <secret>
       containers:
         - name: sif-edge
-          image: <image-name>:<tag>
+          image: gerndt/scheduler:latest
           imagePullPolicy: "Always"
           ports:
             - containerPort: 9000
