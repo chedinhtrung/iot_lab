@@ -15,7 +15,7 @@ logging.getLogger("requests").setLevel(logging.INFO)
 
 class Scheduler(ABC):
     def __init__(self, dispatcher: "Queue[common.Invocation]",
-                 base_path: str = "/data", chk_name: str = "scheduler.pkl"):
+                 base_path: str = "./data", chk_name: str = "scheduler.pkl"):
         self.chk_name = chk_name
         self.base_path = base_path
         self.function_loop: List[common.Function] = []

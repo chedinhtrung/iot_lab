@@ -1,6 +1,6 @@
 
 ORG = "wise2025"
-TOKEN = "4BDe2RwBCwebNjxaCDioj7erNOoRiehXM8A2lNWUS6sxt_3pDZGS4cekonyh3EZdrNJ_BypZXl6h9Ncs1MzSmQ=="
+TOKEN = "YenqrFRLhps7joE-y-utR7ElAzdIViNrCyVSTwsBHG1gNJKlNr8tQIg0ZRneJC4elg063tygS_d6d3RIyI811A=="
 # Store the URL of your InfluxDB instance
 URL="http://192.168.0.103:8086"
 

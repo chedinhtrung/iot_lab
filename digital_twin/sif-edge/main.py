@@ -31,7 +31,7 @@ def register_fn(fn_data: BaseFunction):
     fn = Function(fn_data.name, fn_data.subs, fn_data.url,
                   fn_data.mock, fn_data.method)
     sch.register_fn(fn)
-    print(f"registered function {fn_data.name} at endpoint {fn_data.url} \n")
+    print(f"registered function {fn_data.name} at endpoint {fn_data.url}")
     return
 
 
