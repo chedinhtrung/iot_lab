@@ -8,4 +8,4 @@ RUN pip install -r requirements.txt
 
 COPY . /app/
 
-ENTRYPOINT [ "fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT [ "fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "9000"]
