@@ -26,7 +26,7 @@ class StayAggregator:
             token=TOKEN,
             org=ORG
         )
-        self.query_api = self.client.query_api(query_options=SYNCHRONOUS)
+        self.query_api = self.client.query_api()
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
        
     
@@ -122,7 +122,7 @@ class ActivityAggregator:
             token=TOKEN,
             org=ORG
         )
-        self.query_api = self.client.query_api(query_options=SYNCHRONOUS)
+        self.query_api = self.client.query_api()
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
     def loop(self):
