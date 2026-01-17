@@ -61,6 +61,9 @@ class Invocation(ABC):
                 if res.status >= 300:
                     logger.warn(
                         f"failure to invoke remote resource because: [{res.reason}]")
+                    print(self.kwargs)
+                    print(self.method)
+                    print(self.url)
                 logger.info("invocation has been dispatched")
         except Exception as err:
             logger.error("Failure during invocation...")

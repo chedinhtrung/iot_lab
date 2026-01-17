@@ -1,7 +1,7 @@
 from sifec_base import LocalGateway, base_logger, PeriodicTrigger, ExampleEventFabric
 
 
-app = LocalGateway(mock=True)
+app = LocalGateway(mock=False)
 
 
 async def demo():
