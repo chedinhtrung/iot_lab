@@ -1,6 +1,6 @@
 import requests
 
-data = {"name": "train_bayesian_model", "data": "secret"}
+data = {"name": "train_logistic_regression", "data": "secret"}
 
 response = requests.post("http://localhost:9000/api/event", 
                          json = data)

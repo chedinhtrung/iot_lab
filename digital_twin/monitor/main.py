@@ -5,22 +5,13 @@ app = LocalGateway(mock=False)
 
 def detect_emergency():
     print(f"check emergency event received. Checking...")
-    emergency, confidence = check_emergency()
+    emergency, confidence = True, True
     if emergency: 
-        event = EmergencyEvent(data={"confidence": confidence, "location": roomname})
+        event = EmergencyEvent(data={"confidence": confidence})
         trg = OneShotTrigger(event, True)
         print("Emitting emergency event!")
     return
 
 
 # subscribe to CheckEmergencyEvent, callback detect_emergency
-app.deploy(cb=detect_emergency, name="DetectEmergency", evts="CheckEmergencyEvent", path="DetectEmergency")
-
-
-# periodically emit TrainOccupancyModelEvent
-trn_evt = TrainOccupancyModelEvent()
-trg = PeriodicTrigger(trn_evt, True, "0 * * * *") # run every minute for demo
-
-# periodically emit CheckEmergencyEvent
-chk_evt = CheckEmergencyEvent()
-trg2 = PeriodicTrigger(chk_evt, True, "0 * * * *") # run every minute for demo
+app.deploy(cb=detect_emergency, name=detect_emergency.__name__, evts=detect_emergency.__name__, method="POST")
