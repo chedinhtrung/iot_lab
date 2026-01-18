@@ -35,6 +35,12 @@ def timedelta_to_flux_min(td: timedelta) -> str:
         raise ValueError("Flux duration must be > 0")
     return f"{minutes}m"
 
+def round_timestamp_to_nearest(timestamp:datetime, delta:timedelta):
+    minutes = delta/timedelta(minutes=1)
+    seconds = timestamp.timestamp()
+    rounded = round(seconds/(minutes*60))*(minutes*60)
+    return datetime.fromtimestamp(rounded, tz=timezone.utc)
+
 def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:timedelta):
         """
         returns a bucketized series of timestamps of occupancy detections from start to end
@@ -50,11 +56,10 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
             org=ORG
         )
         query_api = client.query_api()
-        """ returns all detections of the room from time start to time end """
-        
+        start = round_timestamp_to_nearest(start, window)
+        end = round_timestamp_to_nearest(end, window)
         assert end > start
-        start = start.replace(minute=0, second=0, microsecond=0)
-        end = end.replace(minute=0, second=0, microsecond=0)
+
         start_buffered = start - timedelta(days=2)
         
         time_start = start.isoformat().replace("+00:00", "Z")
@@ -72,7 +77,14 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
                 {f"|> aggregateWindow(every: {windowstr}, fn: count, createEmpty: true)" if window is not None else ""}
                 """
 
-        df = query_api.query_data_frame(org=ORG, query=query)
+        # zero df just in case there is nothing in influx 
+        df = pd.DataFrame()
+        df["_time"] = pd.date_range(start=pd.Timestamp(start + window), end=pd.Timestamp(end), freq=window, inclusive="both")
+        df["_value"] = 0
+
+        df_inflx = query_api.query_data_frame(org=ORG, query=query)
+        if len(df_inflx) != 0: 
+            df = df_inflx
 
         # when was the last detection with time <= current bucket?
         query = f"""
@@ -91,9 +103,14 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
                 |> filter(fn: (r) => r._time > {time_start})
                 |> keep(columns: ["_time", "last_occupancy"])
                 """
+        last_occupancy_time_df = pd.DataFrame()
+        last_occupancy_time_df["_time"] = pd.date_range(start=pd.Timestamp(start), end=pd.Timestamp(end), freq=window)
+        last_occupancy_time_df["last_occupancy"] = timedelta(days=2)
 
-        last_occupancy_time_df = query_api.query_data_frame(org=ORG, query=query)
-
+        last_occupancy_time_df_inflx = query_api.query_data_frame(org=ORG, query=query)
+        if len(last_occupancy_time_df_inflx) != 0:
+            last_occupancy_time_df = last_occupancy_time_df_inflx
+        
         df["last_occupancy"] = last_occupancy_time_df["last_occupancy"]
 
         # make the boundaries explicit
@@ -115,8 +132,8 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
 
     """
     
-    start = start.replace(minute=0, second=0, microsecond=0)
-    end = end.replace(minute=0, second=0, microsecond=0)
+    start = round_timestamp_to_nearest(start, window)
+    end = round_timestamp_to_nearest(end, window)
 
     room_dfs = []
     for room in rooms: 
@@ -160,7 +177,6 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
         Void["occupied"] &= ~room["occupied"]
     
     room_dfs.append(Void)
-    rooms += ["Void"]
 
     # compute occupation time for each room by counting the number of continuosly 
     # occupied bucket until and including the current bucket
@@ -185,7 +201,8 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
         
         df["occupancy_time"] += room["occupancy_time"]  # only the active room has non zero occupancy time
     
-    return df, rooms
+    all_rooms = rooms + ["Void"]
+    return df, all_rooms
 
 def preprocess_to_features(data:pd.DataFrame, rooms) -> pd.DataFrame:
     """
@@ -205,26 +222,33 @@ def preprocess_to_features(data:pd.DataFrame, rooms) -> pd.DataFrame:
         feature_df[f"is_weekday_{i}"] = weekday == i
     
     # onehot vector of rooms
-    feature_df[[f"{room}_occupied" for room in rooms]] = data[[f"{room}_occupied" for room in rooms]]
+    feature_df[[f"{room}_occupied" for room in rooms + ["Void"]]] = data[[f"{room}_occupied" for room in rooms + ["Void"]]]
 
-    feature_df[[f"{room}_t_since_last_visit" for room in rooms if room!="Void"]] = data[[f"{room}_t_since_last_visit" for room in rooms if room!="Void"]].apply(lambda s: np.log(s.dt.total_seconds()/60))
+    feature_df[[f"{room}_t_since_last_visit" for room in rooms]] = data[[f"{room}_t_since_last_visit" for room in rooms]].apply(lambda s: np.log(s.dt.total_seconds()/60 + 1))
     
     feature_df["occupancy_time"] = data["occupancy_time"].dt.total_seconds()/60
+    feature_df["occupancy_time"] = np.log(feature_df["occupancy_time"] + 1)
 
     return feature_df
     
 
 def preprocess_to_features_labels(data:pd.DataFrame, rooms, horizon:timedelta)->pd.DataFrame:
+    """
+        shifts the feature some steps into the future and compute the label vector (index of the occupied room) from the one hot
+        meant to be used with the LogRegPredictive model
+    """
     feature_df = preprocess_to_features(data, rooms)
    
     window = data["end"][0] - data["start"][0]
     horizon_index = int(horizon/window)
-    labels = feature_df[[f"{room}_occupied" for room in rooms]].shift(-horizon_index).values.argmax(axis=1)
+    labels = feature_df[[f"{room}_occupied" for room in rooms + ["Void"]]].shift(-horizon_index).values.argmax(axis=1)
     labels = labels[:-horizon_index]
     feature_df = feature_df.iloc[:-horizon_index]
 
     assert len(labels) == len(feature_df)
     return feature_df, labels
+
+
 
 if __name__ == "__main__":
     start = datetime(2026, 1, 14, tzinfo=timezone.utc)

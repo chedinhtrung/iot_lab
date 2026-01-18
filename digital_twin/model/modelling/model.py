@@ -1,3 +1,5 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import pandas as pd
 import numpy as np
@@ -160,7 +162,7 @@ class PredictiveLogRegModel:
         (time, weekday, current room, <room_x>_t_since_last_visit, <room_x>_stay_duration) -> 
 
     """
-    def __init__(self, window:timedelta, rooms:list=["Void", "kitchen", "desk", "fish"], 
+    def __init__(self, window:timedelta, rooms:list=["kitchen", "desk", "fish"], 
                  horizon:timedelta=timedelta(hours=1), history:timedelta=timedelta(days=90)):
         self.horizon = horizon
         self.rooms = rooms
@@ -192,8 +194,9 @@ class PredictiveLogRegModel:
             get the latest observations and predict occupancy in self.horizon
         """
         end = datetime.now(tz=timezone.utc)
-        start = end - self.horizon
+        start = end - self.horizon    # always base on the observation for the last hour
         data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)
+        return self._predict(data), rooms
  
     def train(self):
         """
@@ -244,6 +247,7 @@ def save_model(model, name=None):
         length=buf.getbuffer().nbytes,
     )
     timestamp = datetime.now().date().strftime("%Y%m%d")
+    buf.seek(0)
     MINIO.put_object(
         bucket_name="models",
         object_name=f"history/{name}_{timestamp}.pkl",
@@ -255,11 +259,12 @@ if __name__ == "__main__":
     model = BayesianBetaModel(bucket_size=timedelta(minutes=30))
     start = datetime(2025, 11, 15, 10, tzinfo=timezone.utc)
     end = datetime(2026, 1, 15, tzinfo=timezone.utc)
-    observation = get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
-    model.load_prior("data/Priors.xlsx")
-    model.predict(datetime(2026, 1, 14, 10,4,30, tzinfo=timezone.utc), "fish")
-    model.train()
+    #observation = get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
+    #model._load_prior("data/Priors.xlsx")
+    #model.predict(datetime(2026, 1, 14, 10,4,30, tzinfo=timezone.utc), "fish")
+    #model.train()
 
-    data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
-    logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "fish", "desk", "Void"], horizon=timedelta(minutes=30))
+    #data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
+    logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "desk", "fish"], horizon=timedelta(minutes=30))
     logistic_model.train()
+    logistic_model.predict()
