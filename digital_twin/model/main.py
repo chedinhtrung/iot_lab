@@ -3,13 +3,13 @@ from pydantic import BaseModel
 from modelling.model import * 
 
 # the models 
-bayesianmodel = load_model(f"{BayesianBetaModel.__name__}.pkl")
-if bayesianmodel is None:
+bayesian_model = load_model(f"{BayesianBetaModel.__name__}.pkl")
+if bayesian_model is None:
     print("Warning: Can't find pretrained. Initializing new Bayesian model")
-    bayesianmodel = BayesianBetaModel(timedelta(minutes=30))
-    bayesianmodel.load_prior_from_minio()
-    bayesianmodel.train()
-    save_model(bayesianmodel)
+    bayesian_model = BayesianBetaModel(timedelta(minutes=30))
+    bayesian_model.load_prior_from_minio()
+    bayesian_model.train()
+    save_model(bayesian_model)
 
 logistic_model = load_model(f"{PredictiveLogRegModel.__name__}.pkl")
 if logistic_model is None: 
@@ -24,13 +24,20 @@ app = LocalGateway(mock=False)
 
 def train_bayesian_model(data:dict|None):
     print(f"Training Bayesian model with {data}")
-    #logistic_model.train()
+    bayesian_model.train()
+    save_model(bayesian_model)
+    return {"success": True}
 
 def train_logistic_regression(data:dict|None):
     print(f"Training logistic regression with {data}")
-    #bayesianmodel.train()
+    logistic_model.train()
+    save_model(logistic_model)
+    return {"success": True}
 
-def check_emergency():
+def train_emergency_model(data:dict|None):
+    pass
+
+def check_emergency() -> bool:
     print("Checking for emergency with emergency model")
     return
 
@@ -40,7 +47,7 @@ for cb in training_fct:
     app.deploy(cb=cb, evts=cb.__name__, name=cb.__name__, method="POST")
 
 
-### The event triggers 
+### training events 
 
 class TrainLogisticRegressionEvent(BaseEventFabric):
     def __init__(self):

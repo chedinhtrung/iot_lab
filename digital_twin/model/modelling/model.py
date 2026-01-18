@@ -44,6 +44,10 @@ class BayesianBetaModel:
         self.roomnames = rooms
         self.history = history
 
+        # metadata on the training period
+        self.train_period_start = None
+        self.train_period_end = None
+
     def _predict(self,  bucket_idx: np.ndarray,  weekday: np.ndarray, room: np.ndarray) -> np.ndarray:
         """
         returns the best estimate of p = p(occupied) of the room, i.e the mean of the beta distribution
@@ -111,6 +115,9 @@ class BayesianBetaModel:
             start = end - self.history
             observation = get_bucketized_occupancy(room, start, end, window=self.bucket_size)
             self.update(observation=observation, roomname=room)
+        
+        self.train_period_end = datetime.now(tz=timezone.utc)
+        self.train_period_start = end - self.history
 
     def _load_prior(self, excelfile, k=np.array([4, 7, 3]), b=np.array([0.6, 1, 0.3]), a=np.array([-1, 0, -1.5])):
         """
@@ -232,7 +239,14 @@ def save_model(model, name=None):
     buf.seek(0)
     MINIO.put_object(
         bucket_name="models",
-        object_name=f"{name}.pkl",
+        object_name=f"latest/{name}.pkl",
+        data=buf,
+        length=buf.getbuffer().nbytes,
+    )
+    timestamp = datetime.now().date().strftime("%Y%m%d")
+    MINIO.put_object(
+        bucket_name="models",
+        object_name=f"history/{name}_{timestamp}.pkl",
         data=buf,
         length=buf.getbuffer().nbytes,
     )
