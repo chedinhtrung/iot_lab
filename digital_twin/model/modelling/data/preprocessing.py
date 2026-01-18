@@ -207,7 +207,7 @@ def preprocess_to_features(data:pd.DataFrame, rooms) -> pd.DataFrame:
     # onehot vector of rooms
     feature_df[[f"{room}_occupied" for room in rooms]] = data[[f"{room}_occupied" for room in rooms]]
 
-    feature_df[[f"{room}_t_since_last_visit" for room in rooms if room!="Void"]] = data[[f"{room}_t_since_last_visit" for room in rooms if room!="Void"]].apply(lambda s: s.dt.total_seconds()/60)
+    feature_df[[f"{room}_t_since_last_visit" for room in rooms if room!="Void"]] = data[[f"{room}_t_since_last_visit" for room in rooms if room!="Void"]].apply(lambda s: np.log(s.dt.total_seconds()/60))
     
     feature_df["occupancy_time"] = data["occupancy_time"].dt.total_seconds()/60
 
