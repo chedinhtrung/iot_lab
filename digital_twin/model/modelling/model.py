@@ -2,10 +2,22 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, timezone
-from data.preprocessing import get_bucketized_occupancy
-from data.preprocessing import *
+from modelling.data.preprocessing import get_bucketized_occupancy
+from modelling.data.preprocessing import *
+import os
+import pickle
 
 from sklearn.linear_model import LogisticRegression
+from minio import Minio
+import io
+from minio.error import S3Error
+
+MINIO = Minio(
+    "192.168.0.103:9090",
+    access_key="bSYIFuEHZa3JHTKg6WE9",
+    secret_key="u8TnjmYYEcUJNugWSOUZwXEDqu2FU2JToOIAx2Lt",
+    secure=False,
+)
 
 def sigmoid(x):
     return 1/(1+np.exp(-x))
@@ -18,13 +30,19 @@ class BayesianBetaModel:
         dimension: (buckets_per_day, 7, num_rooms)
     """
 
-    def __init__(self, bucket_size:timedelta, rooms:list=["kitchen", "desk", "fish"]):
+    def __init__(self, bucket_size:timedelta, rooms:list=["kitchen", "desk", "fish"], history:timedelta=timedelta(days=90)):
+        """
+            history: how many days in the past to consider. To keep it representative of the behavior, the model train on a rolling 
+            window of data from the past 90 days
+        """
         buckets_per_day = int(timedelta(days=1)/bucket_size)
         self.bucket_size = bucket_size
+        self.num_buckets = buckets_per_day
         self.num_rooms = len(rooms)
         self.alpha = np.zeros((buckets_per_day, 7, self.num_rooms))
         self.beta = np.zeros((buckets_per_day, 7, self.num_rooms))
         self.roomnames = rooms
+        self.history = history
 
     def _predict(self,  bucket_idx: np.ndarray,  weekday: np.ndarray, room: np.ndarray) -> np.ndarray:
         """
@@ -84,21 +102,24 @@ class BayesianBetaModel:
 
         self._update(bucket_idx, weekday, room, occupancy)
 
-    def train(self, loader):
+    def train(self):
         """
-        loader: a data loader that outputs a batch of recent observations
+            get the data starting from the last time the model was trained, train on that data and save the results to a file
         """
-        pass
-        
+        for room in self.roomnames:
+            end = datetime.now(tz=timezone.utc)
+            start = end - self.history
+            observation = get_bucketized_occupancy(room, start, end, window=self.bucket_size)
+            self.update(observation=observation, roomname=room)
 
-
-    def load_prior(self, excelfile, k=np.array([4, 7, 3]), b=np.array([0.6, 1, 0.3]), a=np.array([-1, 0, -1.5])):
+    def _load_prior(self, excelfile, k=np.array([4, 7, 3]), b=np.array([0.6, 1, 0.3]), a=np.array([-1, 0, -1.5])):
         """
         excel file: contains sheets that are named the same as the room name. Must assign each bucket a score 0 to 10
         k: strength of belief for the prior. Essentially "my prior belief is obtained from k supporting (imaginary) experiments"
         a, b: adjusted score = a + b*score for each room, to reflect relative score confidence and overall probability of visiting
         """
-
+        base_path = os.path.dirname(__file__)
+        excelfile = base_path + "/" + excelfile
         assert len(k) == self.num_rooms
         prior_scores = np.ndarray(self.alpha.shape)
         for roomindex, room in enumerate(self.roomnames):
@@ -116,30 +137,28 @@ class BayesianBetaModel:
         # update alpha and beta
         self.alpha = prior_probs * k[None, None, :]
         self.beta  = (1 - prior_probs) * k
+    
+    def load_prior_from_minio(self):
+        pass
 
     @property
     def mean(self) -> np.ndarray:
         eps = 1e-6
         return self.alpha / (self.alpha + self.beta + eps)
-    
-    def export(self):
-        """
-        export the model's parameters into some form.
-        """
-        pass
 
 
-
-class LogisticRegressionModel: 
+class PredictiveLogRegModel: 
     """
         learns the mapping 
         (time, weekday, current room, <room_x>_t_since_last_visit, <room_x>_stay_duration) -> 
 
     """
-    def __init__(self, window:timedelta, rooms:list, horizon:timedelta):
+    def __init__(self, window:timedelta, rooms:list=["Void", "kitchen", "desk", "fish"], 
+                 horizon:timedelta=timedelta(hours=1), history:timedelta=timedelta(days=90)):
         self.horizon = horizon
         self.rooms = rooms
         self.window = window
+        self.history = history
 
         self.model = LogisticRegression(
             multi_class="multinomial",
@@ -148,7 +167,7 @@ class LogisticRegressionModel:
             class_weight="balanced"
         )
     
-    def train(self, data:pd.DataFrame):
+    def _train(self, data:pd.DataFrame):
         """
         process the data into refined feature vectors
         and then train on the data.
@@ -157,20 +176,76 @@ class LogisticRegressionModel:
         self.model.fit(feature, label)
         return 
     
-    def predict(self, data:pd.DataFrame):
+    def _predict(self, data:pd.DataFrame):
         features = preprocess_to_features(data, self.rooms)
         return self.model.predict_proba(features)
+    
+    def predict(self):
+        """
+            get the latest observations and predict occupancy in self.horizon
+        """
+        end = datetime.now(tz=timezone.utc)
+        start = end - self.horizon
+        data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)
+ 
+    def train(self):
+        """
+            query data from last self.history, train, then save the model
+        """
+        end = datetime.now(tz=timezone.utc)
+        start = end - self.history
+        data, _ = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)
+        self._train(data)
+
+class PredictiveModelEnsemble:
+    def __init__(self):
+        pass
+
+def load_model(pickle_file):
+    """
+        loads a model stored on MinIO in the bucket "models" as pickle file
+    """
+    try:
+        response = MINIO.get_object("models", pickle_file)
+    except S3Error as e:
+        if e.code == "NoSuchKey":
+            return None   # signal: train from scratch
+        else:
+            raise e
+
+    try:
+        data = response.read()
+        print(f"loaded pretrained model from {pickle_file}")
+        return pickle.loads(data)
+    finally:
+        response.close()
+        response.release_conn()
+
+def save_model(model, name=None):
+    """
+        save model to minio
+    """
+    if name is None:
+        name = model.__class__.__name__
+    buf = io.BytesIO()
+    pickle.dump(model, buf)
+    buf.seek(0)
+    MINIO.put_object(
+        bucket_name="models",
+        object_name=f"{name}.pkl",
+        data=buf,
+        length=buf.getbuffer().nbytes,
+    )
 
 if __name__ == "__main__":
     model = BayesianBetaModel(bucket_size=timedelta(minutes=30))
-    start = datetime(2026, 1, 14, 10, tzinfo=timezone.utc)
+    start = datetime(2025, 11, 15, 10, tzinfo=timezone.utc)
     end = datetime(2026, 1, 15, tzinfo=timezone.utc)
     observation = get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
-    model.load_prior("./modelling/data/Priors.xlsx")
+    model.load_prior("data/Priors.xlsx")
     model.predict(datetime(2026, 1, 14, 10,4,30, tzinfo=timezone.utc), "fish")
-    model.update(observation=observation, roomname="fish")
+    model.train()
 
     data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
-    logistic_model = LogisticRegressionModel(timedelta(minutes=30), rooms=["kitchen", "fish", "desk", "Void"], horizon=timedelta(minutes=30))
-    logistic_model.train(data)
-    logistic_model.predict(data.iloc[[0]])
+    logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "fish", "desk", "Void"], horizon=timedelta(minutes=30))
+    logistic_model.train()

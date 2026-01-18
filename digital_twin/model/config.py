@@ -1,3 +1,8 @@
+# Influx
 ORG = "wise2025"
 TOKEN = "Xgt1pvm2VR7wT-cHMx1syKGyYjdQ_-6MX6huMCFLi2AUbwnHjo8s5TJBwV2N2EBi2KI0KWP-cFgMMZIPqq5JbA=="
 URL="http://192.168.0.103:8086"
+
+# MinIO
+
+
