@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from modelling.model import * 
 
 # the models 
-bayesian_model = load_model(f"{BayesianBetaModel.__name__}.pkl")
+bayesian_model = load_model(f"latest/{BayesianBetaModel.__name__}.pkl")
 if bayesian_model is None:
     print("Warning: Can't find pretrained. Initializing new Bayesian model")
     bayesian_model = BayesianBetaModel(timedelta(minutes=30))
@@ -11,7 +11,7 @@ if bayesian_model is None:
     bayesian_model.train()
     save_model(bayesian_model)
 
-logistic_model = load_model(f"{PredictiveLogRegModel.__name__}.pkl")
+logistic_model = load_model(f"latest/{PredictiveLogRegModel.__name__}.pkl")
 if logistic_model is None: 
     print("Warning: Can't find pretrained. Initializing new Logistic Regression model")
     logistic_model = PredictiveLogRegModel(window=timedelta(minutes=15))
@@ -34,12 +34,8 @@ def train_logistic_regression(data:dict|None):
     save_model(logistic_model)
     return {"success": True}
 
-def train_emergency_model(data:dict|None):
+def create_prediction_report():
     pass
-
-def check_emergency() -> bool:
-    print("Checking for emergency with emergency model")
-    return
 
 training_fct = [train_bayesian_model, train_logistic_regression]
 

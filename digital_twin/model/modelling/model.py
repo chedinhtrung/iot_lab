@@ -32,10 +32,10 @@ class BayesianBetaModel:
         dimension: (buckets_per_day, 7, num_rooms)
     """
 
-    def __init__(self, bucket_size:timedelta, rooms:list=["kitchen", "desk", "fish"], history:timedelta=timedelta(days=90)):
+    def __init__(self, bucket_size:timedelta, rooms:list=["kitchen", "desk", "fish"], history:timedelta=timedelta(days=60)):
         """
             history: how many days in the past to consider. To keep it representative of the behavior, the model train on a rolling 
-            window of data from the past 90 days
+            window of data from the past e.g 90 days
         """
         buckets_per_day = int(timedelta(days=1)/bucket_size)
         self.bucket_size = bucket_size
@@ -72,7 +72,7 @@ class BayesianBetaModel:
         bucket_idx: np.ndarray,   # shape (N,)
         weekday: np.ndarray,      # shape (N,)
         room: np.ndarray,         # shape (N,)
-        observation: np.ndarray      # shape (N,) in {0,1}
+        observation: np.ndarray,     # shape (N,) in {0,1}
     ):
         """
          generic update where observation is an array of N observations, 
@@ -86,11 +86,13 @@ class BayesianBetaModel:
 
     def update(self, 
                    observation: pd.DataFrame, 
-                   roomname:str
+                   roomname:str, 
+                   halflife = 6
                    ): 
         """
         observation: a dataframe of raw bucketized observations of a single room.
         columns: start, end, num_detections
+        halflife:  In weeks. after halflife weeks, the contribution is halved
         """
         
         #assert len(observation) == self.alpha.shape[0]
@@ -105,6 +107,13 @@ class BayesianBetaModel:
         room = self.roomnames.index(roomname)
         room = (np.ones(occupancy.shape) * room).astype(int)
         weekday = observation["start"].dt.weekday.to_numpy()
+
+        # compute time since last observation for decay
+        # before updating with observations 
+        self.alpha *= np.pow(0.5, 1/halflife)
+        weeks_since_first_observation = (observation["start"][len(observation)-1] - observation["start"])//timedelta(days=7)
+        decay = np.pow(0.5, (weeks_since_first_observation/halflife))
+        occupancy *= decay
 
         self._update(bucket_idx, weekday, room, occupancy)
 
@@ -159,11 +168,17 @@ class BayesianBetaModel:
 class PredictiveLogRegModel: 
     """
         learns the mapping 
-        (time, weekday, current room, <room_x>_t_since_last_visit, <room_x>_stay_duration) -> 
+        (time, weekday, current room, <room_x>_t_since_last_visit, <room_x>_stay_duration) -> p(occupied) for each room
 
     """
     def __init__(self, window:timedelta, rooms:list=["kitchen", "desk", "fish"], 
-                 horizon:timedelta=timedelta(hours=1), history:timedelta=timedelta(days=90)):
+                 horizon:timedelta=timedelta(hours=1), history:timedelta=timedelta(days=60)):
+        """
+            window: the size of the bucket to discretize the day
+            rooms: the room names 
+            horizon: how far into the future to predict
+            history: how far back to pull training data
+        """
         self.horizon = horizon
         self.rooms = rooms
         self.window = window
@@ -208,8 +223,30 @@ class PredictiveLogRegModel:
         self._train(data)
 
 class PredictiveModelEnsemble:
-    def __init__(self):
-        pass
+    def __init__(self, window:timedelta, 
+                 horizons:list, rooms:list=["kitchen", "desk", "fish"], history:timedelta=timedelta(days=60)):
+        self.models = []
+        self.horizons = horizons
+        self.window = window
+        self.history = history
+        self.rooms = rooms
+        for horizon in self.horizons: 
+            self.models.append(PredictiveLogRegModel(window=self.window,
+                                                     horizon=horizon,
+                                                     history=history,
+                                                     rooms=self.rooms))
+    
+    def train(self):
+        for model in self.models:
+            model.train()
+    
+    def predict(self):
+        predictions = []
+        horizons = []
+        for model in self.models: 
+            horizons.append(model.horizon)
+            predictions.append(model.predict())
+        
 
 def load_model(pickle_file):
     """
@@ -262,9 +299,9 @@ if __name__ == "__main__":
     #observation = get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
     #model._load_prior("data/Priors.xlsx")
     #model.predict(datetime(2026, 1, 14, 10,4,30, tzinfo=timezone.utc), "fish")
-    #model.train()
+    model.train()
 
     #data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
-    logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "desk", "fish"], horizon=timedelta(minutes=30))
-    logistic_model.train()
-    logistic_model.predict()
+    #logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "desk", "fish"], horizon=timedelta(minutes=30))
+    #logistic_model.train()
+    #logistic_model.predict()

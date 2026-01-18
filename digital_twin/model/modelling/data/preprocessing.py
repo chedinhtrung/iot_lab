@@ -212,9 +212,9 @@ def preprocess_to_features(data:pd.DataFrame, rooms) -> pd.DataFrame:
     feature_df = pd.DataFrame()
 
     # sin, cos of time since midnight
-    t_since_midnight = (data["end"] - data["start"]).dt.total_seconds()/60
-    feature_df["sin_t_since_midnight"] = np.sin(t_since_midnight/1440)
-    feature_df["cos_t_since_midnight"] = np.cos(t_since_midnight/1440)
+    t_since_midnight = (data["end"] - data["start"].dt.normalize()).dt.total_seconds()/60
+    feature_df["sin_t_since_midnight"] = np.sin(2*np.pi*t_since_midnight/1440)
+    feature_df["cos_t_since_midnight"] = np.cos(2*np.pi*t_since_midnight/1440)
     
     # onehot vector of weekday
     weekday = data["start"].dt.weekday
@@ -255,5 +255,5 @@ if __name__ == "__main__":
     end = datetime(2026, 1, 15, tzinfo=timezone.utc)
     #get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
     room_dfs, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
-    print(room_dfs)
+    preprocess_to_features(room_dfs, ["kitchen", "desk", "fish"])
     
