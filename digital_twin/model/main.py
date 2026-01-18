@@ -11,11 +11,13 @@ if bayesian_model is None:
     bayesian_model.train()
     save_model(bayesian_model)
 
-logistic_model = load_model(f"latest/{PredictiveLogRegModel.__name__}.pkl")
-if logistic_model is None: 
-    print("Warning: Can't find pretrained. Initializing new Logistic Regression model")
-    logistic_model = PredictiveLogRegModel(window=timedelta(minutes=15))
-    save_model(logistic_model)
+predictive_model = load_model(f"latest/{PredictiveModelEnsemble.__name__}.pkl")
+if predictive_model is None:
+    print("Warning: Can't find pretrained. Initializing new Bayesian model")
+    predictive_model = PredictiveModelEnsemble(window=timedelta(minutes=15),
+                                           horizons=[timedelta(minutes=30), timedelta(minutes=60), timedelta(minutes=120), timedelta(minutes=180)])
+    predictive_model.train()
+    save_model(predictive_model)
 
 # Functions and registering them with the scheduler
 # The scheduler's endpoint has to be set with SCH_SERVICE_NAME env var
@@ -28,16 +30,16 @@ def train_bayesian_model(data:dict|None):
     save_model(bayesian_model)
     return {"success": True}
 
-def train_logistic_regression(data:dict|None):
+def train_predictive_model(data:dict|None):
     print(f"Training logistic regression with {data}")
-    logistic_model.train()
-    save_model(logistic_model)
+    predictive_model.train()
+    save_model(predictive_model)
     return {"success": True}
 
 def create_prediction_report():
     pass
 
-training_fct = [train_bayesian_model, train_logistic_regression]
+training_fct = [train_bayesian_model, train_predictive_model]
 
 for cb in training_fct:
     app.deploy(cb=cb, evts=cb.__name__, name=cb.__name__, method="POST")
@@ -50,7 +52,7 @@ class TrainLogisticRegressionEvent(BaseEventFabric):
         super().__init__()
     
     def call(self, *args, **kwargs):
-        return train_logistic_regression.__name__, None
+        return train_predictive_model.__name__, None
     
 class TrainLogisticRegressionEvent(BaseEventFabric):
     def __init__(self):

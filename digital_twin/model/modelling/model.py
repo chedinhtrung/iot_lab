@@ -202,14 +202,15 @@ class PredictiveLogRegModel:
     
     def _predict(self, data:pd.DataFrame):
         features = preprocess_to_features(data, self.rooms)
-        return self.model.predict_proba(features)
+        features_last = features.tail(1)
+        return self.model.predict_proba(features_last)
     
     def predict(self):
         """
             get the latest observations and predict occupancy in self.horizon
         """
         end = datetime.now(tz=timezone.utc)
-        start = end - self.horizon    # always base on the observation for the last hour
+        start = end - timedelta(days=1)    # always base on the observation for the last day for buffering
         data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)
         return self._predict(data), rooms
  
@@ -246,6 +247,8 @@ class PredictiveModelEnsemble:
         for model in self.models: 
             horizons.append(model.horizon)
             predictions.append(model.predict())
+        
+        return horizons, predictions
         
 
 def load_model(pickle_file):
@@ -299,9 +302,14 @@ if __name__ == "__main__":
     #observation = get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
     #model._load_prior("data/Priors.xlsx")
     #model.predict(datetime(2026, 1, 14, 10,4,30, tzinfo=timezone.utc), "fish")
-    model.train()
+    #model.train()
 
     #data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
     #logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "desk", "fish"], horizon=timedelta(minutes=30))
     #logistic_model.train()
     #logistic_model.predict()
+    ensemble = PredictiveModelEnsemble(window=timedelta(minutes=15), horizons=(timedelta(minutes=15), timedelta(minutes=30), timedelta(minutes=60), timedelta(minutes=120)))
+    ensemble.train()
+    horizons, predictions = ensemble.predict()
+    print(horizons)
+    print(predictions)
