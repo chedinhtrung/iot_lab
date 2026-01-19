@@ -1,8 +1,8 @@
 import requests
 
-data = {"name": "train_logistic_regression", "data": "secret"}
+data = {"name": "train_predictive_model", "data": "secret"}
 
-response = requests.post("http://localhost:9000/api/event", 
+response = requests.post("http://192.168.0.103:30032/api/event", 
                          json = data)
 
 print(response.status_code)
