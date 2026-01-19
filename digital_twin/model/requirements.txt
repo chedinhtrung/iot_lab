@@ -7,3 +7,6 @@ git+https://github.com/CAPS-IoT/sifec-base.git
 influxdb-client
 numpy 
 pandas
+scikit-learn
+minio
+openpyxl

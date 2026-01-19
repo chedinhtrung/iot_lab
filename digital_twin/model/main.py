@@ -36,7 +36,16 @@ def train_predictive_model(data:dict|None):
     save_model(predictive_model)
     return {"success": True}
 
-def create_prediction_report():
+def create_prediction_report(data:dict|None):
+    """
+        use predictive + bayesian to generate predictions
+    """
+    pass
+
+def create_weekly_stat_summary(data:dict|None):
+    """
+        compute statistical summaries and push it to visualization
+    """
     pass
 
 training_fct = [train_bayesian_model, train_predictive_model]
@@ -47,19 +56,21 @@ for cb in training_fct:
 
 ### training events 
 
-class TrainLogisticRegressionEvent(BaseEventFabric):
-    def __init__(self):
+class PeriodicTrainEvent(BaseEventFabric):
+    def __init__(self, func):
         super().__init__()
+        self.func = func
     
-    def call(self, *args, **kwargs):
-        return train_predictive_model.__name__, None
-    
-class TrainLogisticRegressionEvent(BaseEventFabric):
-    def __init__(self):
-        super().__init__()
-    
-    def call(self, *args, **kwargs):
-        return train_bayesian_model.__name__, None
-    
+    def call(self):
+        return self.func.__name__, None
+
 # triggers 
+
+train_bayesian_trigger = PeriodicTrigger(PeriodicTrainEvent(train_bayesian_model),
+                                         cronSpec="0 0 * * 1")
+
+train_predictive_trigger = PeriodicTrigger(PeriodicTrainEvent(train_predictive_model),
+                                         cronSpec="0 0 * * 1")
+
+
     

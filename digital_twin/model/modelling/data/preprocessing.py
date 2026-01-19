@@ -6,6 +6,11 @@ from influxdb_client import Point, WritePrecision
 import pandas as pd
 import numpy as np
 
+import warnings
+from influxdb_client.client.warnings import MissingPivotFunction
+warnings.simplefilter("ignore", MissingPivotFunction)
+
+
 ROOMINFO = {
     "kitchen": {"bucket": "1_7_12", "roomID": "door", "measurement": "door"},
     "fish": {"bucket": "1_8_13", "roomID": "fish", "measurement": "PIR"},

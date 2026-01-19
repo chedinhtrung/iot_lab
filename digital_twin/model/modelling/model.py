@@ -157,7 +157,35 @@ class BayesianBetaModel:
         self.beta  = (1 - prior_probs) * k
     
     def load_prior_from_minio(self):
-        pass
+        resp = MINIO.get_object("models", "Priors.xlsx")
+        try:
+            xlsx_bytes = resp.read()
+        finally:
+            resp.close()
+            resp.release_conn()
+
+        buf = io.BytesIO(xlsx_bytes)
+        xls = pd.ExcelFile(buf)          # works with BytesIO
+
+        prior_scores = np.ndarray(self.alpha.shape)
+        for roomindex, room in enumerate(self.roomnames):
+            df = pd.read_excel(xls, sheet_name=room)
+            prior_scores[:, :, roomindex] = df.iloc[:,1:].to_numpy()
+
+         # hardcoded score confidence and score weighting for now 
+        k=np.array([4, 7, 3])
+        b=np.array([0.6, 1, 0.3])
+        a=np.array([-1, 0, -1.5])
+        # turn score into probabilities
+
+        prior_logits = a[None, None, :] + b[None, None, :] * (prior_scores - 5)   
+
+        prior_probs = sigmoid(prior_logits)
+
+        # update alpha and beta
+        self.alpha = prior_probs * k[None, None, :]
+        self.beta  = (1 - prior_probs) * k
+        
 
     @property
     def mean(self) -> np.ndarray:
@@ -185,7 +213,6 @@ class PredictiveLogRegModel:
         self.history = history
 
         self.model = LogisticRegression(
-            multi_class="multinomial",
             solver="lbfgs",
             max_iter=500,
             class_weight="balanced"
@@ -209,6 +236,7 @@ class PredictiveLogRegModel:
         """
             get the latest observations and predict occupancy in self.horizon
         """
+        print("Generating prediction from most recent observation...")
         end = datetime.now(tz=timezone.utc)
         start = end - timedelta(days=1)    # always base on the observation for the last day for buffering
         data, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)
@@ -218,6 +246,7 @@ class PredictiveLogRegModel:
         """
             query data from last self.history, train, then save the model
         """
+        print(f"Training on data from past {self.history.days}")
         end = datetime.now(tz=timezone.utc)
         start = end - self.history
         data, _ = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)
@@ -238,7 +267,8 @@ class PredictiveModelEnsemble:
                                                      rooms=self.rooms))
     
     def train(self):
-        for model in self.models:
+        for i, model in enumerate(self.models):
+            print(f"Training model with horizon {self.horizons[i]}")
             model.train()
     
     def predict(self):
