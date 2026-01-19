@@ -12,6 +12,9 @@ ROOMINFO = {
     "desk": {"bucket": "1_6_10", "roomID": "desk", "measurement": "PIR"}
 }
 
+import warnings
+from influxdb_client.client.warnings import MissingPivotFunction
+warnings.simplefilter("ignore", MissingPivotFunction)
 
 ORG = "wise2025"
 TOKEN = "0NxTXKuB4iDmWJn0_FzwwQ45ZxZfpnDEQWAQItqHjx-rurBqwE8afYIRPwG2isnynumGim1FxdRyuSmqeEsQdg=="

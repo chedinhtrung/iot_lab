@@ -15,16 +15,44 @@ def detect_emergency(data:dict|None):
     print(f"check emergency event received. Checking...")
     active_room, expected_stay_duration, actual_stay_duration = duration_model.predict()
     
+    ### Kitchen emergency
     if active_room == "kitchen" and actual_stay_duration/expected_stay_duration > 3:
-        event = EmergencyEvent(data={"location": "kitchen", "stay_duration":actual_stay_duration.total_seconds()/60})
+        event = EmergencyEvent(data={"location": active_room, "stay_duration":actual_stay_duration.total_seconds()/60, "priority": 0})
         trg = OneShotTrigger(event, True)
-        print("Emitting emergency event!")
-        return
+        print("Emitting emergency event Kitchen")
+    
+    ### Reminder to stand up
+    if active_room == "desk" and actual_stay_duration > timedelta(hours=2):
+        event = EmergencyEvent(data={"location": active_room, "stay_duration":actual_stay_duration.total_seconds()/60, "priority": 1})
+        trg = OneShotTrigger(event, True)
+        print("Emitting emergency event Desk!")
+
+def detect_high_co2(data:dict|None):
+    """
+        simple query the co2
+    """
+    print("Checking CO2 level...")
+    pass
     
 def train_duration_model(data:dict|None):
     print(f"Training duration model...")
     duration_model.train()
     save_model(duration_model)
 
-# subscribe to CheckEmergencyEvent, callback detect_emergency
-app.deploy(cb=detect_emergency, name=detect_emergency.__name__, evts=detect_emergency.__name__, method="POST")
+
+functs = [detect_emergency, train_duration_model, detect_high_co2]
+
+for function in functs:
+    app.deploy(cb=function, name=function.__name__, evts=function.__name__, method="POST")
+
+# periodic triggers for detection
+# every 15 min 
+detect_emergency_trigger = PeriodicTrigger(PeriodicFunctionEvent(detect_emergency), 
+                                           cronSpec="*/15 * * * *")
+
+detect_co2_trigger = PeriodicTrigger(PeriodicFunctionEvent(detect_high_co2), 
+                                           cronSpec="*/15 * * * *")
+
+# every week on monday
+train_model_trigger = PeriodicTrigger(PeriodicFunctionEvent(train_duration_model), 
+                                           cronSpec="0 0 * * 1")
