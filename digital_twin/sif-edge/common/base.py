@@ -57,7 +57,7 @@ class Invocation(ABC):
                 if self.method == "GET":
                     self.kwargs = {}
 
-                res = urllib3.request(self.method, self.url, **self.kwargs)
+                res = urllib3.request(self.method, self.url, **self.kwargs, timeout=60)
                 if res.status >= 300:
                     logger.warn(
                         f"failure to invoke remote resource because: [{res.reason}]")
