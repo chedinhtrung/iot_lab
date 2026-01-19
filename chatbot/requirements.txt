@@ -1,0 +1,6 @@
+fastapi[standard]
+pytz
+influxdb-client[ciso]
+urllib3
+openai
+
