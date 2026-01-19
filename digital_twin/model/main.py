@@ -39,12 +39,7 @@ def train_predictive_model(data:dict|None):
 def create_prediction_report(data:dict|None):
     """
         use predictive + bayesian to generate predictions
-    """
-    pass
-
-def create_weekly_stat_summary(data:dict|None):
-    """
-        compute statistical summaries and push it to visualization
+        pushes predictions to database
     """
     pass
 
@@ -56,7 +51,7 @@ for cb in training_fct:
 
 ### training events 
 
-class PeriodicTrainEvent(BaseEventFabric):
+class PeriodicEvent(BaseEventFabric):
     def __init__(self, func):
         super().__init__()
         self.func = func
@@ -66,10 +61,12 @@ class PeriodicTrainEvent(BaseEventFabric):
 
 # triggers 
 
-train_bayesian_trigger = PeriodicTrigger(PeriodicTrainEvent(train_bayesian_model),
+
+
+train_bayesian_trigger = PeriodicTrigger(PeriodicEvent(train_bayesian_model),
                                          cronSpec="0 0 * * 1")
 
-train_predictive_trigger = PeriodicTrigger(PeriodicTrainEvent(train_predictive_model),
+train_predictive_trigger = PeriodicTrigger(PeriodicEvent(train_predictive_model),
                                          cronSpec="0 0 * * 1")
 
 

@@ -5,6 +5,7 @@ from modelling.model import *
 app = LocalGateway(mock=False)
 
 duration_model = load_model(f"latest/{StayDurationModel.__name__}.pkl")
+
 if duration_model is None: 
     print("Warning: Can't find pretrained. Initializing new Bayesian model")
     duration_model = StayDurationModel(timedelta(minutes=15))
@@ -17,13 +18,22 @@ def detect_emergency(data:dict|None):
     
     ### Kitchen emergency
     if active_room == "kitchen" and actual_stay_duration/expected_stay_duration > 3:
-        event = EmergencyEvent(data={"location": active_room, "stay_duration":actual_stay_duration.total_seconds()/60, "priority": 0})
+        event = EmergencyEvent(data={"type": "stay",
+                                     "timestamp":datetime.now(tz=timezone.utc).isoformat(),
+                                     "location": active_room, 
+                                     "stay_duration":actual_stay_duration.total_seconds()/60, 
+                                     "priority": 0})
         trg = OneShotTrigger(event, True)
         print("Emitting emergency event Kitchen")
     
     ### Reminder to stand up
     if active_room == "desk" and actual_stay_duration > timedelta(hours=2):
-        event = EmergencyEvent(data={"location": active_room, "stay_duration":actual_stay_duration.total_seconds()/60, "priority": 1})
+        event = EmergencyEvent(data={"type": "stay",
+                                     "timestamp":datetime.now(tz=timezone.utc).isoformat(),
+                                     "location": active_room, 
+                                     "stay_duration":actual_stay_duration.total_seconds()/60, 
+                                     "priority": 1})
+        
         trg = OneShotTrigger(event, True)
         print("Emitting emergency event Desk!")
 
@@ -38,6 +48,10 @@ def train_duration_model(data:dict|None):
     print(f"Training duration model...")
     duration_model.train()
     save_model(duration_model)
+
+
+def generate_prediction(data:dict|None):
+    pass
 
 
 functs = [detect_emergency, train_duration_model, detect_high_co2]
