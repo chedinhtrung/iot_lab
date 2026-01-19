@@ -3,4 +3,4 @@ pytz
 influxdb-client[ciso]
 urllib3
 openai
-
+streamlit
