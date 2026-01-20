@@ -7,7 +7,7 @@ app = LocalGateway(mock=False)
 duration_model = load_model(f"latest/{StayDurationModel.__name__}.pkl")
 
 if duration_model is None: 
-    print("Warning: Can't find pretrained. Initializing new Bayesian model")
+    print("Warning: Can't find pretrained. Initializing new Duration model")
     duration_model = StayDurationModel(timedelta(minutes=15))
     duration_model.train()
     save_model(duration_model)

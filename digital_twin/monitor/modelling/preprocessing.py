@@ -1,3 +1,7 @@
+
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from datetime import datetime, timezone, timedelta
 import influxdb_client
@@ -5,6 +9,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from influxdb_client import Point, WritePrecision
 import pandas as pd
 import numpy as np
+from config import *
 
 ROOMINFO = {
     "kitchen": {"bucket": "1_7_12", "roomID": "door", "measurement": "door"},
