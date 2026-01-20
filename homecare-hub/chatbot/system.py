@@ -26,6 +26,10 @@ of time spent in that room during that time period.
 - Did the person use the kitchen yesterday -> query occupancy data of the room "kitchen".
 
 The query is time sensitive, so always use the timestamp provided at the start of the conversation as the reference of now. Everything is relative to that timestamp.
+
+Due to performance issues, you are strictly only allowed to query raw data with the max length of 1 week, i.e end - start < 1 week. Furthermore,
+for questions that don't need data or follow up question that can be answered based on previously queried data, avoid making queries. This does not restrict the age of the data 
+you can query, only its length. 
 """
 
 
@@ -34,7 +38,7 @@ TOOLS = [
         "type": "function",
         "name": "get_occupancy_data",
         "description": """
-            Query the database and returns a JSON containing the occupancy data of the person from the start to the end timestamp.
+            Query the database and returns a JSON containing the occupancy data of the person from the start to the end timestamp for all available rooms.
             This returns the occupancy data and allow answer of questions about the behavior pattern of the user, comparing changes 
             in behavior, or picking out semantic meaning in the data.
             For example: 
@@ -44,9 +48,12 @@ TOOLS = [
             The data is discretized into time buckets of finite size where in each bucket one and only one room is occupied. 
             You will get a result that contains timestamps in buckets of regular time intervals. Each bucket captures the state 
             of occupancy of rooms during that time interval.
-            Especially useful are the columns: occupancy_time - gives "time spent up to that timestamp of the at the time occupied room"
-            <roomname>_occupied - whether the room is occupied at that time
-            <roomname>_t_since_last_visit: time since I have visited that room for the last time, 0 if i am there.
+
+            Especially useful are the columns:
+            start & end: the start and end timestamp of the discrete time bucket
+            occupied - whether the room is occupied at that time
+            t_since_last_visit: time since I have visited that room for the last time, 0 if i am there.
+            occupancy_time: how long has the room been continuously occupied until that time
             The room Void is active only when no actual rooms are active.
         """,
         "parameters": {
@@ -55,17 +62,27 @@ TOOLS = [
                 "start": {
                     "type": "string",
                     "description": """
-                        A timestamp following strict ISO format, for example 2022-09-27 18:00:00.000 
+                        A timestamp following strict ISO format, for example 2022-09-27T18:00:00.000 
                         that represent the start of the query period.
                     """
-                    },
+                },
                 "end": {
                     "type": "string",
                     "description": """
-                        A timestamp following strict ISO format, for example 2022-09-27 18:00:00.000 
+                        A timestamp following strict ISO format, for example 2022-09-27T18:00:00.000 
                         that represent the end of the query period.
                     """
-                }
+                },
+                "resolution": {
+                    "type": "integer",
+                    "description": """
+                        A day will be broken down into discrete buckets. Resolution gives the number of minutes in each bucket. 
+                        Larger = more coarse, more data efficient and better for answering questions on the long range 
+                        Smaller = more fine, more accurate on the absolute occupancy duration
+                        Must be divisible by 60 or 60 must be divisible by resolution
+                        Avoid more than 60 minutes or below 10 minutes (unless end - start is short)
+                    """
+                },
             }, 
             "required": ["start", "end"]
         }

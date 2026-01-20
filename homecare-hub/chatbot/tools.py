@@ -24,13 +24,24 @@ def get_occupancy_data(start:str, end:str, resolution=30):
         start, end: start and end of the query period. Must be ISO timestamp string
         resolution: how much to coarsen, in minutes. Defaults to 30
     """
-    print(f"Bot requested to get data from {start} to {end}")
+    print(f"Bot requested to get data from {start} to {end} with {resolution}")
     start = datetime.fromisoformat(start)
     end = datetime.fromisoformat(end)
 
+    if end - start > timedelta(days=10):
+        return {
+                "result": "Function Call Failed",
+                "reason": "Exceeded max time from start to end."
+            }
+
     try:
-        raw_df, rooms = get_combined_bucketized_occupancy(start, end, window=timedelta(minutes=resolution))
-        
+        resolution = 60/(int(60/resolution)) if resolution < 60 else int(resolution/60)
+        raw_df, rooms = get_individualized_occupancy(start, end, window=timedelta(minutes=resolution))
+        if len(raw_df) > 1500: 
+            return {
+                "result": "Function Call Failed",
+                "reason": "Too much data. Please try a coarser resolution."
+            }
         better_df = make_df_json_safe(raw_df)
         
         return {

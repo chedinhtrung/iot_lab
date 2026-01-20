@@ -4,11 +4,10 @@ from datetime import datetime
 from chatbot.system import *
 from chatbot.tools import * 
 import streamlit as st
-from chatbot.secret import *
 
 class ChatBot: 
-    def __init__(self):
-        self.client=OpenAI(api_key=OPENAI_KEY)
+    def __init__(self, openai_key):
+        self.client=OpenAI(api_key=openai_key)
         self.system_prompt = SYSPROMPT
         
         self.messages =  [{"role": "system", "content": self.system_prompt}]

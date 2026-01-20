@@ -6,13 +6,24 @@ with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
 
-st.title("Chatbot")
-st.caption("A chatbot powered by OpenAI that allows you to talk to your data.")
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+st.title("Home Assistant")
+st.markdown("""
+            A chatbot powered by OpenAI that allows you to talk to your data. 
+
+            You can ask it any question on the data, and it will query the database and answer.
+           """)
+
+if "openai_key" not in st.session_state:
+    st.session_state.openai_key = openai_api_key
+
+elif st.session_state.openai_key != openai_api_key:
+    st.session_state.openai_key = openai_api_key
+    if "bot" in st.session_state:
+        st.session_state.bot = ChatBot(openai_api_key)
 
 if "bot" not in st.session_state:
-    st.session_state.bot = ChatBot()
+    st.session_state.bot = ChatBot(openai_api_key)
+
 else:
     for msg in st.session_state.bot.messages:
         if msg["role"] == "system": 
