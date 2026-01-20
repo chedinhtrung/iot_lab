@@ -247,7 +247,7 @@ class PredictiveLogRegModel:
         """
             query data from last self.history, train, then save the model
         """
-        print(f"Training on data from past {self.history.days}")
+        print(f"Training on data from past {self.history.days} days")
         end = datetime.now(tz=timezone.utc)
         start = end - self.history
         data, _ = get_combined_bucketized_occupancy(start=start, end=end, window=self.window, rooms=self.rooms)

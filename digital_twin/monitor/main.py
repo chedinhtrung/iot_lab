@@ -1,6 +1,7 @@
 from sifec_base import LocalGateway, base_logger, PeriodicTrigger, OneShotTrigger
 from utils import * 
 from modelling.model import *
+from fastapi import BackgroundTasks
 
 app = LocalGateway(mock=False)
 
@@ -11,6 +12,10 @@ if duration_model is None:
     duration_model = StayDurationModel(timedelta(minutes=15))
     duration_model.train()
     save_model(duration_model)
+
+def train_then_save(model):
+    model.train()
+    save_model(model)
 
 def detect_emergency(data:dict|None):
     print(f"check emergency event received. Checking...")
@@ -50,10 +55,9 @@ def detect_high_co2(data:dict|None):
     todo = Todo("High CO2! Open windows!", priority=6)
     todo.push_to_influx()
     
-def train_duration_model(data:dict|None):
+def train_duration_model(background_tasks:BackgroundTasks):
     print(f"Training duration model...")
-    duration_model.train()
-    save_model(duration_model)
+    background_tasks.add_task(train_then_save, duration_model)
 
 
 def generate_prediction(data:dict|None):

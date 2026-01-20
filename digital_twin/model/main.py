@@ -1,6 +1,7 @@
 from sifec_base import LocalGateway, base_logger, PeriodicTrigger, BaseEventFabric 
 from pydantic import BaseModel
 from modelling.model import * 
+from fastapi import BackgroundTasks
 
 # the models 
 bayesian_model = load_model(f"latest/{BayesianBetaModel.__name__}.pkl")
@@ -24,22 +25,24 @@ if predictive_model is None:
 
 app = LocalGateway(mock=False)
 
-def train_bayesian_model(data:dict|None):
-    print(f"Training Bayesian model with {data}")
-    bayesian_model.train()
-    save_model(bayesian_model)
+def train_then_save(model):
+    model.train()
+    save_model(model)
+
+def train_bayesian_model(background_tasks:BackgroundTasks):
+    print(f"Training Bayesian model")
+    background_tasks.add_task(train_then_save, bayesian_model)
     return {"success": True}
 
-def train_predictive_model(data:dict|None):
-    print(f"Training logistic regression with {data}")
-    predictive_model.train()
-    save_model(predictive_model)
+def train_predictive_model(background_tasks:BackgroundTasks):
+    print(f"Training predictive model")
+    background_tasks.add_task(train_then_save, predictive_model)
     return {"success": True}
 
 def create_prediction_report(data:dict|None):
     """
         use predictive + bayesian to generate predictions
-        pushes predictions to database
+        returns predictions
     """
     pass
 
@@ -60,8 +63,6 @@ class PeriodicEvent(BaseEventFabric):
         return self.func.__name__, None
 
 # triggers 
-
-
 
 train_bayesian_trigger = PeriodicTrigger(PeriodicEvent(train_bayesian_model),
                                          cronSpec="0 0 * * 1")
