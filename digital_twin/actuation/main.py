@@ -3,7 +3,6 @@ from utils import *
 from datetime import datetime
 
 app = LocalGateway(mock=False)
-app.local_port = "8001"
 
 def handle_emergency(data:dict):
     print(f"emergency event received!")

@@ -30,8 +30,16 @@ def get_co2_level():
         |> filter(fn: (r) => r["_type"] == "sensor-value")
         |> last()
     """
-    client = InfluxDBClient(url=URL_INFLUX)
+    client = InfluxDBClient(url=URL_INFLUX, token=TOKEN_INFLUX, org=ORG)
+    query_api = client.query_api()
+    df = query_api.query_data_frame(query)
+
+    if len(df) != 0:
+        return df["_value"][0]
+    
+    return None
+
     
 
 if __name__ == "__main__":
-    pass
+    get_co2_level()

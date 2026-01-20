@@ -52,14 +52,23 @@ def detect_high_co2(data:dict|None):
         simple query the co2
     """
     print("Checking CO2 level...")
-    co2_ppm = 9000 
-    
-    if co2_ppm > 1000:
+    co2_ppm = get_co2_level() 
+    if co2_ppm is None: 
+        event = EmergencyEvent(data={"name": "Broken CO2 sensor",
+                                    "timestamp":datetime.now(tz=timezone.utc).isoformat(),
+                                    "location": "fish",
+                                    "task": "Check CO2 sensor",
+                                    "text": f"No CO2 value recorded for the past day, please check sensor",
+                                    "priority": 4}
+                                )
+        trg = OneShotTrigger(event, True)
+
+    elif co2_ppm > 1000:
         event = EmergencyEvent(data={"name": "High CO2 level detected!",
                                     "timestamp":datetime.now(tz=timezone.utc).isoformat(),
                                     "location": "fish",
                                     "task": "Open windows",
-                                    "text": f"CO2 level reached {co2_ppm}, needs venting.",
+                                    "text": f"CO2 level reached {co2_ppm}ppm, needs venting.",
                                     "priority": 6}
                                 )
         trg = OneShotTrigger(event, True)
