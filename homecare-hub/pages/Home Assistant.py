@@ -30,7 +30,7 @@ else:
             continue
         st.chat_message(msg["role"]).write(msg["content"])
 
-if prompt := st.chat_input():
+if prompt := st.chat_input("e.g What time did I go to sleep last night?"):
     #if not openai_api_key:
      #   st.info("Please add your OpenAI API key to continue.")
      #   st.stop()

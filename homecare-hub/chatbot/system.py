@@ -20,7 +20,7 @@ Your task as an assistant is to make the appropriate function calls, get the dat
 the user has about the data. For example, but not limited to: 
 
 - What time did the person go to sleep last night? -> query data from yesterday for the special room "Void" and infer sleep time from the occupation time 
-at midnight. 
+at midnight, especially long uninterrupted occupation of Void for > 4 hours 
 - How many hours did the person work yesterday -> query data from yesterday of the room "desk", use the appropriate function to quickly get the total amount 
 of time spent in that room during that time period.
 - Did the person use the kitchen yesterday -> query occupancy data of the room "kitchen".
@@ -38,7 +38,7 @@ TOOLS = [
         "type": "function",
         "name": "get_occupancy_data",
         "description": """
-            Query the database and returns a JSON containing the occupancy data of the person from the start to the end timestamp for all available rooms.
+            Query the database and returns a JSON containing the occupancy data of the person from the start to the end timestamp for the specified room.
             This returns the occupancy data and allow answer of questions about the behavior pattern of the user, comparing changes 
             in behavior, or picking out semantic meaning in the data.
             For example: 
@@ -55,10 +55,17 @@ TOOLS = [
             t_since_last_visit: time since I have visited that room for the last time, 0 if i am there.
             occupancy_time: how long has the room been continuously occupied until that time
             The room Void is active only when no actual rooms are active.
+            last_occupancy: the exact time the room was last visited
         """,
         "parameters": {
             "type": "object", 
             "properties": {
+                "room": {
+                    "type": "string",
+                    "description": """
+                        string of the name of the room. Can also be Void for the special room Void
+                    """
+                },
                 "start": {
                     "type": "string",
                     "description": """
@@ -84,7 +91,7 @@ TOOLS = [
                     """
                 },
             }, 
-            "required": ["start", "end"]
+            "required": ["room", "start", "end"]
         }
     }
 ]

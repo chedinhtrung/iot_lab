@@ -19,12 +19,12 @@ def make_df_json_safe(df:pd.DataFrame):
 
     return df
 
-def get_occupancy_data(start:str, end:str, resolution=30):
+def get_occupancy_data(room: str, start:str, end:str, resolution=30):
     """
         start, end: start and end of the query period. Must be ISO timestamp string
         resolution: how much to coarsen, in minutes. Defaults to 30
     """
-    print(f"Bot requested to get data from {start} to {end} with {resolution}")
+    print(f"Bot requested to get data from room {room}, from {start} to {end} with {resolution}")
     start = datetime.fromisoformat(start)
     end = datetime.fromisoformat(end)
 
@@ -35,8 +35,14 @@ def get_occupancy_data(start:str, end:str, resolution=30):
             }
 
     try:
-        resolution = 60/(int(60/resolution)) if resolution < 60 else int(resolution/60)
-        raw_df, rooms = get_individualized_occupancy(start, end, window=timedelta(minutes=resolution))
+        resolution = 60/(int(60/resolution)) if resolution <= 60 else int(resolution/60)
+        raw_df, rooms = get_individualized_occupancy(room, start, end, window=timedelta(minutes=resolution))
+        if raw_df is None: 
+            print("Could not find the wanted room")
+            return {
+                "result": "Function Call Failed",
+                "reason": f"No such room {room} in the database. Maybe the user typed the wrong room."
+            }
         if len(raw_df) > 1500: 
             return {
                 "result": "Function Call Failed",
@@ -70,4 +76,4 @@ for funct in TOOL_FUNCTS:
 
 
 if __name__ == "__main__":
-    get_occupancy_data(start="2026-01-19T00:00:00", end="2026-01-20T00:00:00")
+    get_occupancy_data(start="2026-01-13T11:26:25.000", end="2026-01-20T11:26:25.000", resolution=60, room="fish")

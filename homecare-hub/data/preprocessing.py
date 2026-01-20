@@ -257,12 +257,15 @@ def preprocess_to_features_labels(data:pd.DataFrame, rooms, horizon:timedelta)->
 def export_csv_to_minio(df:pd.DataFrame, filename:str):
     pass
 
-def get_individualized_occupancy(start:datetime, end: datetime, window: timedelta, 
+def get_individualized_occupancy(roomname:str, start:datetime, end: datetime, window: timedelta, 
                                     rooms:list=["kitchen", "fish", "desk"], priority:list=[1, 2, 0]):
     """
         processes exactly the same as get_combined_bucketized_occupancy, without the 
         "latest occupancy wins" part - meant for chatbot use
     """
+    if roomname not in rooms + ["Void"]:
+        return None, None
+    
     start = round_timestamp_to_nearest(start, window)
     end = round_timestamp_to_nearest(end, window)
     start_buffered = start - timedelta(days=1)
@@ -270,19 +273,6 @@ def get_individualized_occupancy(start:datetime, end: datetime, window: timedelt
     for room in rooms: 
         room_df = get_bucketized_occupancy(room, start_buffered, end, window)
         room_dfs.append(room_df)
-
-    # latest occupancy wins
-
-    for room1 in room_dfs: 
-        room1_occupied = room1["num_detections"] > 0
-        room1["occupied"] = room1_occupied
-        room1["time_since_last_visit"] = room1["end"] - room1["last_occupancy"]
-        CAP_MIN = timedelta(days=2)
-        room1["time_since_last_visit"] = (room1["time_since_last_visit"]
-        .fillna(CAP_MIN)
-        .clip(upper=CAP_MIN)
-        )
-        room1["time_since_last_visit"] *= room1["time_since_last_visit"] > window
     
     # the special room Void = no other room is active
 
@@ -291,45 +281,45 @@ def get_individualized_occupancy(start:datetime, end: datetime, window: timedelt
     Void["end"] = room_dfs[0]["end"]
     Void["occupied"] = True
     Void["name"] = "Void"
-    
     for room in room_dfs:
+        room_occupied = room["num_detections"] > 0
+        room["occupied"] = room_occupied
         Void["occupied"] &= ~room["occupied"]
     
     room_dfs.append(Void)
+    all_rooms = rooms + ["Void"]
+
+    room1 = room_dfs[all_rooms.index(roomname)]
+    if roomname != "Void":
+        room1_occupied = room1["num_detections"] > 0
+        room1["occupied"] = room1_occupied
+        CAP_MIN = timedelta(days=2)
+        room1["time_since_last_visit"] = room1["end"] - room1["last_occupancy"]
+        room1["time_since_last_visit"] = (room1["time_since_last_visit"]
+            .fillna(CAP_MIN)
+            .clip(upper=CAP_MIN)
+            )
+        room1["time_since_last_visit"] *= room1["time_since_last_visit"] > window
+        room1["time_since_last_visit"] = room1["end"] - room1["last_occupancy"]
+    
+   
 
     # compute occupation time for each room by counting the number of continuosly 
     # occupied bucket until and including the current bucket
 
-    for room in room_dfs: 
-        occ = room["occupied"].astype(int)
-        block_id = occ.ne(occ.shift(1)).cumsum()
-        room["occupancy_time"] = (room.groupby(block_id).cumcount() + 1) * occ * window
-
-    # join everything into one single dataframe 
-
-    df = pd.DataFrame()
-    df["start"] = room_dfs[0]["start"]
-    df["end"] = room_dfs[0]["end"]
-    df["occupancy_time"] = pd.to_timedelta(0)
-    
-    for room in room_dfs: 
-        roomname = room["name"][0]
-        df[f"{roomname}_occupied"] = room["occupied"]
-        if roomname != "Void":
-            df[f"{roomname}_t_since_last_visit"] = room["time_since_last_visit"]
-        
-        df["occupancy_time"] += room["occupancy_time"]  # only the active room has non zero occupancy time
+    occ = room1["occupied"].astype(int)
+    block_id = occ.ne(occ.shift(1)).cumsum()
+    room1["occupancy_time"] = (room1.groupby(block_id).cumcount() + 1) * occ * window
     
     # cut the buffer part
-    df = df[df["start"] > start]
+    room1 = room1[room1["start"] > start]
     
-    all_rooms = rooms + ["Void"]
-    return df, all_rooms
+    return room1, all_rooms
 
 
 if __name__ == "__main__":
     start = datetime(2026, 1, 19, tzinfo=timezone.utc)
     end = datetime(2026, 1, 20, tzinfo=timezone.utc)
     #get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
-    room_df = get_bucketized_occupancy(roomname="desk", start=start, end=end, window=timedelta(minutes=30))
+    room_df = get_individualized_occupancy(roomname="desk", start=start, end=end, window=timedelta(minutes=30))
     
