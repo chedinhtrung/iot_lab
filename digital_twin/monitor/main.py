@@ -25,6 +25,8 @@ def detect_emergency(data:dict|None):
                                      "priority": 0})
         trg = OneShotTrigger(event, True)
         print("Emitting emergency event Kitchen")
+        todo = Todo("Kitchen RESCUE", priority=0)
+        todo.push_to_influx()
     
     ### Reminder to stand up
     if active_room == "desk" and actual_stay_duration > timedelta(hours=2):
@@ -36,13 +38,17 @@ def detect_emergency(data:dict|None):
         
         trg = OneShotTrigger(event, True)
         print("Emitting emergency event Desk!")
+        todo = Todo("Desk stay too long, stand up!", priority=10)
+        todo.push_to_influx()
 
 def detect_high_co2(data:dict|None):
     """
         simple query the co2
     """
     print("Checking CO2 level...")
-    pass
+    
+    todo = Todo("High CO2! Open windows!", priority=6)
+    todo.push_to_influx()
     
 def train_duration_model(data:dict|None):
     print(f"Training duration model...")
