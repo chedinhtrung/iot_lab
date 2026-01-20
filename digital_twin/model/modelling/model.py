@@ -13,11 +13,12 @@ from sklearn.linear_model import LogisticRegression
 from minio import Minio
 import io
 from minio.error import S3Error
+from config import *
 
 MINIO = Minio(
-    "192.168.0.103:9090",
-    access_key="bSYIFuEHZa3JHTKg6WE9",
-    secret_key="u8TnjmYYEcUJNugWSOUZwXEDqu2FU2JToOIAx2Lt",
+    MINIO_URL,
+    access_key=MINIO_ACCESSKEY,
+    secret_key=MINIO_SECRETKEY,
     secure=False,
 )
 

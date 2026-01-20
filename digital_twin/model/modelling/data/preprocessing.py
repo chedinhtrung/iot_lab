@@ -1,3 +1,6 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from datetime import datetime
 from datetime import datetime, timezone, timedelta
 import influxdb_client
@@ -9,18 +12,13 @@ import numpy as np
 import warnings
 from influxdb_client.client.warnings import MissingPivotFunction
 warnings.simplefilter("ignore", MissingPivotFunction)
-
+from config import *
 
 ROOMINFO = {
     "kitchen": {"bucket": "1_7_12", "roomID": "door", "measurement": "door"},
     "fish": {"bucket": "1_8_13", "roomID": "fish", "measurement": "PIR"},
     "desk": {"bucket": "1_6_10", "roomID": "desk", "measurement": "PIR"}
 }
-
-
-ORG = "wise2025"
-TOKEN = "0NxTXKuB4iDmWJn0_FzwwQ45ZxZfpnDEQWAQItqHjx-rurBqwE8afYIRPwG2isnynumGim1FxdRyuSmqeEsQdg=="
-URL="http://192.168.0.103:8086"
         
 class RoomInfo: 
     def __init__(self, roomname, infodict:dict=ROOMINFO):
@@ -56,7 +54,7 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
         """
         windowstr = timedelta_to_flux_min(window)
         client = influxdb_client.InfluxDBClient(
-            url=URL,
+            url=INFLUX_URL,
             token=TOKEN,
             org=ORG
         )
