@@ -147,8 +147,6 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
 
     # latest occupancy wins
 
-    joined_df = pd.DataFrame 
-
     for room1 in room_dfs: 
         room1_occupied = room1["num_detections"] > 0
         room1_name = room1["name"][0]

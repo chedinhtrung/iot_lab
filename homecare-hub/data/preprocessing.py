@@ -139,15 +139,13 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
     
     start = round_timestamp_to_nearest(start, window)
     end = round_timestamp_to_nearest(end, window)
-
+    start_buffered = start - timedelta(days=1)
     room_dfs = []
     for room in rooms: 
-        room_df = get_bucketized_occupancy(room, start, end, window)
+        room_df = get_bucketized_occupancy(room, start_buffered, end, window)
         room_dfs.append(room_df)
 
     # latest occupancy wins
-
-    joined_df = pd.DataFrame 
 
     for room1 in room_dfs: 
         room1_occupied = room1["num_detections"] > 0
@@ -206,6 +204,9 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
         
         df["occupancy_time"] += room["occupancy_time"]  # only the active room has non zero occupancy time
     
+    # cut the buffer part
+    df = df[df["start"] > start]
+    
     all_rooms = rooms + ["Void"]
     return df, all_rooms
 
@@ -257,8 +258,8 @@ def export_csv_to_minio(df:pd.DataFrame, filename:str):
     pass
 
 if __name__ == "__main__":
-    start = datetime(2026, 1, 14, tzinfo=timezone.utc)
-    end = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    start = datetime(2026, 1, 19, tzinfo=timezone.utc)
+    end = datetime(2026, 1, 20, tzinfo=timezone.utc)
     #get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
     room_dfs, rooms = get_combined_bucketized_occupancy(start=start, end=end, window=timedelta(minutes=30))
     preprocess_to_features(room_dfs, ["kitchen", "desk", "fish"])
