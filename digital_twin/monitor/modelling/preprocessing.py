@@ -20,10 +20,6 @@ ROOMINFO = {
 import warnings
 from influxdb_client.client.warnings import MissingPivotFunction
 warnings.simplefilter("ignore", MissingPivotFunction)
-
-ORG = "wise2025"
-TOKEN = "0NxTXKuB4iDmWJn0_FzwwQ45ZxZfpnDEQWAQItqHjx-rurBqwE8afYIRPwG2isnynumGim1FxdRyuSmqeEsQdg=="
-URL="http://192.168.0.103:8086"
         
 class RoomInfo: 
     def __init__(self, roomname, infodict:dict=ROOMINFO):
@@ -59,8 +55,8 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
         """
         windowstr = timedelta_to_flux_min(window)
         client = influxdb_client.InfluxDBClient(
-            url=URL,
-            token=TOKEN,
+            url=URL_INFLUX,
+            token=TOKEN_INFLUX,
             org=ORG
         )
         query_api = client.query_api()

@@ -54,8 +54,8 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
         """
         windowstr = timedelta_to_flux_min(window)
         client = influxdb_client.InfluxDBClient(
-            url=INFLUX_URL,
-            token=TOKEN,
+            url=URL_INFLUX,
+            token=TOKEN_INFLUX,
             org=ORG
         )
         query_api = client.query_api()
