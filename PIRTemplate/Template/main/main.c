@@ -181,9 +181,9 @@ void app_main() {
     set_wakeup_then_sleep();
   }
 
-  // TODO: handle periodic wakeup for CO2, Humidity and Temp (only device C)
+  // periodic wakeup for CO2, Humidity and Temp (only device C)
+  
   if (mac_int == DEV_C_MAC && wuc == EXTI1){
-    //init_co2_sensor();
     co2sensordev.cfg = i2c_conf;
     ESP_ERROR_CHECK(i2c_dev_create_mutex(&co2sensordev));
     ds3231_clear_alarm_flags(&i2c_rtc, DS3231_ALARM_1);
