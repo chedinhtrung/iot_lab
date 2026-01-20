@@ -1,21 +1,5 @@
-# -*- coding: utf-8 -*-
-# Copyright 2024-2025 Streamlit Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-from dataclasses import dataclass, field
-import uuid
+from todos.todos_crud_functions import *
 
 st.set_page_config(page_title="To-do list", page_icon=":memo:")
 
@@ -23,28 +7,20 @@ st.set_page_config(page_title="To-do list", page_icon=":memo:")
 state = st.session_state
 
 
-@dataclass
-class Todo:
-    text: str
-    is_done = False
-    uid: uuid.UUID = field(default_factory=uuid.uuid4)
-
-
 if "todos" not in state:
-    state.todos = [
-        Todo(text="Buy milk"),
-        Todo(text="Wash dishes"),
-        Todo(text="Write a novel"),
-    ]
+    state.todos = get_todos()
 
 
 def remove_todo(i):
+    state.todos[i].delete()
     state.todos.pop(i)
 
 
 def add_todo():
-    state.todos.append(Todo(text=state.new_item_text))
+    todo = Todo(text=state.new_item_text, priority=state.priority)
+    state.todos.append(todo)
     state.new_item_text = ""
+    todo.push_to_influx()
 
 
 def check_todo(i, new_value):
@@ -52,6 +28,9 @@ def check_todo(i, new_value):
 
 
 def delete_all_checked():
+    for todo in state.todos:
+        if not todo.is_done:
+            todo.delete()
     state.todos = [t for t in state.todos if not t.is_done]
 
 
@@ -70,8 +49,17 @@ with st.form(key="new_item_form", border=False):
         st.text_input(
             "New item",
             label_visibility="collapsed",
-            placeholder="Add to-do item",
+            placeholder="Name",
             key="new_item_text",
+        )
+
+        st.number_input(
+            "Priority (0 = Highest)",
+            label_visibility="visible",
+            key="priority",
+            min_value=0,
+            max_value=10,
+            step=1
         )
 
         st.form_submit_button(
@@ -92,6 +80,8 @@ if state.todos:
                     args=[i, not todo.is_done],
                     key=f"todo-chk-{todo.uid}",
                 )
+                st.text(f"Priority {todo.priority}")
+                st.text(f"{todo.timestamp}")
                 st.button(
                     ":material/delete:",
                     type="tertiary",

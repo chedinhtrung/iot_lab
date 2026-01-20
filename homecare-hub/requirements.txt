@@ -4,3 +4,4 @@ influxdb-client[ciso]
 urllib3
 openai
 streamlit
+plotly
