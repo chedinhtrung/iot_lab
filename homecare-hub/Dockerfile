@@ -10,4 +10,4 @@ COPY . /app/
 
 EXPOSE 9000
 
-ENTRYPOINT ["streamlit", "run", "main.py", " --server.address", "0.0.0.0", "--server.port", "9000"]
+ENTRYPOINT ["streamlit", "run", "Home.py", " --server.address", "0.0.0.0", "--server.port", "9000"]
