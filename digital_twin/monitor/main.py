@@ -30,7 +30,8 @@ def detect_emergency(data:dict|None):
                                      "text": f"Kitchen Rescue, person stayed for {actual_stay_duration.total_seconds()/60} minutes.",
                                      "task": "Kitchen Rescue"
                                      })
-        trg = OneShotTrigger(event, True)
+        event()
+        #trg = OneShotTrigger(event, True)
         print("Emitting emergency event Kitchen")
     
     ### Reminder to stand up
@@ -41,11 +42,14 @@ def detect_emergency(data:dict|None):
                                      "location": active_room, 
                                      "priority": 10,
                                      "text": f"Stand up! Sitting at desk for {actual_stay_duration.total_seconds()/60} minutes already.",
-                                    "task": "Stand up",
+                                     "task": "Stand up",
                                      })
-        
-        trg = OneShotTrigger(event, True)
+        event()
+        #trg = OneShotTrigger(event, True)
         print("Emitting emergency event Desk!")
+    
+    
+    print("Check finished")
 
 def detect_high_co2(data:dict|None):
     """
@@ -53,6 +57,7 @@ def detect_high_co2(data:dict|None):
     """
     print("Checking CO2 level...")
     co2_ppm = get_co2_level() 
+    print(f"CO2 level at {co2_ppm}")
     if co2_ppm is None: 
         event = EmergencyEvent(data={"name": "Broken CO2 sensor",
                                     "timestamp":datetime.now(tz=timezone.utc).isoformat(),
@@ -61,7 +66,7 @@ def detect_high_co2(data:dict|None):
                                     "text": f"No CO2 value recorded for the past day, please check sensor",
                                     "priority": 4}
                                 )
-        trg = OneShotTrigger(event, True)
+        event()
 
     elif co2_ppm > 1000:
         event = EmergencyEvent(data={"name": "High CO2 level detected!",
@@ -71,7 +76,8 @@ def detect_high_co2(data:dict|None):
                                     "text": f"CO2 level reached {co2_ppm}ppm, needs venting.",
                                     "priority": 6}
                                 )
-        trg = OneShotTrigger(event, True)
+        print(f"Trying to emit Emergency Event CO2: {event.data}")
+        event()
     
 def train_duration_model(background_tasks:BackgroundTasks):
     print(f"Training duration model...")
