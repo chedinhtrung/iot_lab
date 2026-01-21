@@ -27,35 +27,36 @@ of time spent in that room during that time period.
 
 The query is time sensitive, so always use the timestamp provided at the start of the conversation as the reference of now. Everything is relative to that timestamp.
 
-Due to performance issues, you are strictly only allowed to query raw data with the max length of 1 week, i.e end - start < 1 week. Furthermore,
-for questions that don't need data or follow up question that can be answered based on previously queried data, avoid making queries. This does not restrict the age of the data 
-you can query, only its length. 
+When the user asks to create a report, he is likely to save it, so avoid back questions, but keep any other analysis. 
 """
 
 
 TOOLS = [
     {
         "type": "function",
-        "name": "get_occupancy_data",
+        "name": "get_coarsened_occupancy_data",
         "description": """
+            This call is very efficient! Prefer this call unless it really cannot return the question posed. Long periods of time (over 2 weeks) is not 
+            an issue for this call.
+
             Query the database and returns a JSON containing the occupancy data of the person from the start to the end timestamp for the specified room.
             This returns the occupancy data and allow answer of questions about the behavior pattern of the user, comparing changes 
             in behavior, or picking out semantic meaning in the data.
+
             For example: 
             How much sleep time did the person have this week?
             Due to the nature of the query, always query at least 1 day before the current time for buffering. 
 
-            The data is discretized into time buckets of finite size where in each bucket one and only one room is occupied. 
-            You will get a result that contains timestamps in buckets of regular time intervals. Each bucket captures the state 
-            of occupancy of rooms during that time interval.
+            The result contains a list of big intervals of time corresponding to periods where the room is occupied, when it started being occupied, 
+            when it stopped being occupied, and the total amount of time passed in each block.
 
-            Especially useful are the columns:
-            start & end: the start and end timestamp of the discrete time bucket
-            occupied - whether the room is occupied at that time
-            t_since_last_visit: time since I have visited that room for the last time, 0 if i am there.
-            occupancy_time: how long has the room been continuously occupied until that time
-            The room Void is active only when no actual rooms are active.
-            last_occupancy: the exact time the room was last visited
+            All time intervals outside the blocks returned represent periods of time when the room is not occupied
+
+            Columns:
+            start & end: the start and end timestamp of the blocks
+            occupancy_time: how long is the block from start to end
+            The room Void is active only when no actual rooms are active and closely correlate to being asleep (if at night) or out of house (if during the day)
+           
         """,
         "parameters": {
             "type": "object", 
@@ -63,7 +64,8 @@ TOOLS = [
                 "room": {
                     "type": "string",
                     "description": """
-                        string of the name of the room. Can also be Void for the special room Void
+                        string of the name of the room. Can also be Void for the special room Void that is occupied 
+                        when no other rooms are occupied
                     """
                 },
                 "start": {
@@ -79,19 +81,9 @@ TOOLS = [
                         A timestamp following strict ISO format, for example 2022-09-27T18:00:00.000 
                         that represent the end of the query period.
                     """
-                },
-                "resolution": {
-                    "type": "integer",
-                    "description": """
-                        A day will be broken down into discrete buckets. Resolution gives the number of minutes in each bucket. 
-                        Larger = more coarse, more data efficient and better for answering questions on the long range 
-                        Smaller = more fine, more accurate on the absolute occupancy duration
-                        Must be divisible by 60 or 60 must be divisible by resolution
-                        Avoid more than 60 minutes or below 10 minutes (unless end - start is short)
-                    """
-                },
+                }
             }, 
             "required": ["room", "start", "end"]
         }
-    }
+    }, 
 ]

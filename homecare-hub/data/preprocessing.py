@@ -1,3 +1,7 @@
+
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from datetime import datetime, timezone, timedelta
 import influxdb_client
@@ -205,53 +209,6 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
     all_rooms = rooms + ["Void"]
     return df, all_rooms
 
-def preprocess_to_features(data:pd.DataFrame, rooms) -> pd.DataFrame:
-    """
-        process the data from get_combined_bucketized_occupancy into features
-    """
-
-    feature_df = pd.DataFrame()
-
-    # sin, cos of time since midnight
-    t_since_midnight = (data["end"] - data["start"].dt.normalize()).dt.total_seconds()/60
-    feature_df["sin_t_since_midnight"] = np.sin(2*np.pi*t_since_midnight/1440)
-    feature_df["cos_t_since_midnight"] = np.cos(2*np.pi*t_since_midnight/1440)
-    
-    # onehot vector of weekday
-    weekday = data["start"].dt.weekday
-    for i in range(7):
-        feature_df[f"is_weekday_{i}"] = weekday == i
-    
-    # onehot vector of rooms
-    feature_df[[f"{room}_occupied" for room in rooms + ["Void"]]] = data[[f"{room}_occupied" for room in rooms + ["Void"]]]
-
-    feature_df[[f"{room}_t_since_last_visit" for room in rooms]] = data[[f"{room}_t_since_last_visit" for room in rooms]].apply(lambda s: np.log(s.dt.total_seconds()/60 + 1))
-    
-    feature_df["occupancy_time"] = data["occupancy_time"].dt.total_seconds()/60
-    feature_df["occupancy_time"] = np.log(feature_df["occupancy_time"] + 1)
-
-    return feature_df
-    
-
-def preprocess_to_features_labels(data:pd.DataFrame, rooms, horizon:timedelta)->pd.DataFrame:
-    """
-        shifts the feature some steps into the future and compute the label vector (index of the occupied room) from the one hot
-        meant to be used with the LogRegPredictive model
-    """
-    feature_df = preprocess_to_features(data, rooms)
-   
-    window = data["end"][0] - data["start"][0]
-    horizon_index = int(horizon/window)
-    labels = feature_df[[f"{room}_occupied" for room in rooms + ["Void"]]].shift(-horizon_index).values.argmax(axis=1)
-    labels = labels[:-horizon_index]
-    feature_df = feature_df.iloc[:-horizon_index]
-
-    assert len(labels) == len(feature_df)
-    return feature_df, labels
-
-def export_csv_to_minio(df:pd.DataFrame, filename:str):
-    pass
-
 def get_individualized_occupancy(roomname:str, start:datetime, end: datetime, window: timedelta, 
                                     rooms:list=["kitchen", "fish", "desk"], priority:list=[1, 2, 0]):
     """
@@ -312,9 +269,28 @@ def get_individualized_occupancy(roomname:str, start:datetime, end: datetime, wi
     return room1, all_rooms
 
 
+def get_coarsened_occupancy(room:str, start:datetime, end:datetime, window:timedelta, rooms:list=["kitchen", "fish", "desk"]):
+
+    if room not in rooms + ["Void"]:
+        return None, None
+    raw_df, rooms = get_individualized_occupancy(room, start, end, window)
+
+    occ = raw_df["occupied"].astype(int)
+    block_id = occ.ne(occ.shift(1)).cumsum()
+    blocks = raw_df.assign(block_id=block_id).groupby("block_id").agg(
+          state=("occupied", "first"),
+          start=("start", "first"),
+          end=("end", "last"),
+          buckets=("start", "size"),
+      ).reset_index(drop=True)
+    
+    blocks["occupancy_time"] = blocks["buckets"]*window
+    blocks = blocks[blocks["state"]]
+    return blocks[["start","end", "occupancy_time"]]
+
 if __name__ == "__main__":
     start = datetime(2026, 1, 19, tzinfo=timezone.utc)
     end = datetime(2026, 1, 20, tzinfo=timezone.utc)
     #get_bucketized_occupancy("fish", start, end, window=timedelta(minutes=30))
-    room_df = get_individualized_occupancy(roomname="desk", start=start, end=end, window=timedelta(minutes=30))
+    stays = get_coarsened_occupancy("desk", start, end, timedelta(minutes=10))
     
