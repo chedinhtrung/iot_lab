@@ -88,6 +88,7 @@ class Invocation(ABC):
                 # else:
 
                 res = http.request(self.method, self.url, **self.kwargs)
+                print(f"Invoking {self.method}, request to {self.url}")
 
                 self.metrics_data["request_end"] = int(
                     datetime.now().timestamp()*1000)

@@ -50,6 +50,9 @@ class BayesianBetaModel:
         # metadata on the training period
         self.train_period_start = None
         self.train_period_end = None
+    
+    def get_summary(self):
+        return self.roomnames, self.mean
 
     def _predict(self,  bucket_idx: np.ndarray,  weekday: np.ndarray, room: np.ndarray) -> np.ndarray:
         """

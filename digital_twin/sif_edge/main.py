@@ -23,6 +23,7 @@ sch_evt_loop = sch.return_event_loop()
 
 @app.post("/api/event", status_code=200)
 def handle_event(evt_req: EventRequest):
+    print(f"Got event {evt_req.data}")
     evt = Event(evt_req.name, data=evt_req.data)
     sch_evt_loop.put(evt, True)
     return {"status": 200}

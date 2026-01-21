@@ -44,7 +44,10 @@ def create_prediction_report(data:dict|None):
         use predictive + bayesian to generate predictions
         returns predictions
     """
-    pass
+    horizons, predictions = predictive_model.predict()
+    week_summary = bayesian_model.get_summary()
+    return
+
 
 training_fct = [train_bayesian_model, train_predictive_model]
 
@@ -69,6 +72,3 @@ train_bayesian_trigger = PeriodicTrigger(PeriodicEvent(train_bayesian_model),
 
 train_predictive_trigger = PeriodicTrigger(PeriodicEvent(train_predictive_model),
                                          cronSpec="0 0 * * 1")
-
-
-    

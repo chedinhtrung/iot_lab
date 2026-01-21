@@ -2,10 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: actuation-configmap
+  namespace: digital-twin
   labels:
     app: actuation
 data:
-  SCH_SERVICE_NAME: http://sif-edge.digital-twin:9000
+  SCH_SERVICE_NAME: http://10.43.28.174:9000
   URL_INFLUX: http://192.168.0.103:8086
   TOKEN_INFLUX: Xgt1pvm2VR7wT-cHMx1syKGyYjdQ_-6MX6huMCFLi2AUbwnHjo8s5TJBwV2N2EBi2KI0KWP-cFgMMZIPqq5JbA==
   TOKEN_TODOS: FrE7QsTmmI9QMYlsE1_kJ_IC1ErCObNaqOBWN3FKkP4JX6DXXlGbBh_UsKON-lfKDwJyQhiVrwGoniRHylmamw==
