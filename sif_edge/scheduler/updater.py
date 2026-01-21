@@ -43,7 +43,7 @@ class WeightUpdater(ABC):
         return path
 
     def fetch_replicas(self, name):
-        for ns in ["default", "digitaltwin"]:
+        for ns in ["default", "digital-twin"]:
             replicaset = self.client.list_namespaced_replica_set(ns)
             for rs in replicaset.items:
                 if rs.metadata.name.startswith(name):
@@ -63,7 +63,7 @@ class WeightUpdater(ABC):
 
     def register(self, endpoint: str):
         if self.__endpoints.get(endpoint, None) is None:
-            for ns in ["default", "digitaltwin"]:
+            for ns in ["default", "digital-twin"]:
                 replicaset = self.client.list_namespaced_replica_set(ns)
                 name = self.generate_name(endpoint)
                 for rs in replicaset.items:
