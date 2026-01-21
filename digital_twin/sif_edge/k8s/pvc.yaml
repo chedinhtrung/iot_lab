@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   # This name uniquely identifies the PVC. Will be used in deployment below.
   name: sif-edge-pv-claim
+  namespace: digital-twin
   labels:
     app: sif-edge
 spec:

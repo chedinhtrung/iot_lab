@@ -2,6 +2,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: sif-edge-pv-volume
+  namespace: digital-twin
   labels:
     type: local
     app: sif-edge
