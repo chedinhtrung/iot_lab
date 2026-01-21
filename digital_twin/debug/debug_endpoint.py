@@ -1,8 +1,8 @@
 import requests
 
-data = {"name": "detect_high_co2", "data": "secret"}
+data = {"name": "train_bayesian_model", "data": "secret"}
 
-response = requests.post("http://localhost:9000/api/event", 
+response = requests.post("http://192.168.0.103:30032/api/event", 
                          json = data)
 
 print(response.status_code)
