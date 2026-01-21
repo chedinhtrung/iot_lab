@@ -23,3 +23,8 @@ MINIO_SECRETKEY = os.getenv(
     "MINIO_SECRETKEY",
     "u8TnjmYYEcUJNugWSOUZwXEDqu2FU2JToOIAx2Lt"
 )
+
+MODEL_SERVICE = os.getenv(
+    "MODEL_SERVICE",
+    "http://localhost:8000/api/predict"
+)

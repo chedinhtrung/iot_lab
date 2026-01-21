@@ -39,15 +39,14 @@ def train_predictive_model(background_tasks:BackgroundTasks):
     background_tasks.add_task(train_then_save, predictive_model)
     return {"success": True}
 
+@app.get("/api/predict")
 def create_prediction_report(data:dict|None):
     """
         use predictive + bayesian to generate predictions
         returns predictions
     """
-    horizons, predictions = predictive_model.predict()
-    week_summary = bayesian_model.get_summary()
-    return
-
+    results = predictive_model.jsonify(predictive_model.predict())
+    return results
 
 training_fct = [train_bayesian_model, train_predictive_model]
 
@@ -72,3 +71,4 @@ train_bayesian_trigger = PeriodicTrigger(PeriodicEvent(train_bayesian_model),
 
 train_predictive_trigger = PeriodicTrigger(PeriodicEvent(train_predictive_model),
                                          cronSpec="0 0 * * 1")
+

@@ -123,7 +123,7 @@ def get_bucketized_occupancy(roomname, start:datetime, end:datetime, window:time
         return df[["name", "start", "end", "num_detections", "last_occupancy"]]
 
 def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: timedelta, 
-                                    rooms:list=["kitchen", "fish", "desk"], priority:list=[1, 2, 0]):
+                                    rooms:list=["kitchen", "desk", "fish"], priority:list=[1, 2, 0]):
     
     """
     combine occupancy of rooms. If two bucket at the same time of two different rooms are both occupied 
@@ -205,7 +205,7 @@ def get_combined_bucketized_occupancy(start:datetime, end: datetime, window: tim
     all_rooms = rooms + ["Void"]
     return df, all_rooms
 
-def preprocess_to_features(data:pd.DataFrame, rooms) -> pd.DataFrame:
+def preprocess_to_features(data:pd.DataFrame, rooms:list=["kitchen", "desk", "fish"]) -> pd.DataFrame:
     """
         process the data from get_combined_bucketized_occupancy into features
     """

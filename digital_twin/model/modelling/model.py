@@ -14,6 +14,7 @@ from minio import Minio
 import io
 from minio.error import S3Error
 from config import *
+import json
 
 MINIO = Minio(
     MINIO_URL,
@@ -195,6 +196,9 @@ class BayesianBetaModel:
     def mean(self) -> np.ndarray:
         eps = 1e-6
         return self.alpha / (self.alpha + self.beta + eps)
+    
+    def jsonify(self, prediction):
+        pass
 
 
 class PredictiveLogRegModel: 
@@ -283,6 +287,30 @@ class PredictiveModelEnsemble:
             predictions.append(model.predict())
         
         return horizons, predictions
+
+    def jsonify(self, result):
+        output = {}
+        horizons, predictions = result
+
+        rooms = predictions[0][1]
+        output["rooms"] = rooms
+        horizon_datest = []
+        for horizon in horizons: 
+            horizon_datest.append(horizon.total_seconds()/60)
+        
+        output["horizons"] = horizon_datest
+        
+        multihorizon_probabilities = []
+        for prediction in predictions:
+            probabilities, rooms = prediction
+            probabilities = probabilities[0]
+            multihorizon_probabilities.append(probabilities.tolist())
+        
+        output["probabilities"] = multihorizon_probabilities
+        return output
+
+        
+
         
 
 def load_model(pickle_file):
@@ -342,7 +370,7 @@ if __name__ == "__main__":
     #logistic_model = PredictiveLogRegModel(window=timedelta(minutes=30), rooms=["kitchen", "desk", "fish"], horizon=timedelta(minutes=30))
     #logistic_model.train()
     #logistic_model.predict()
-    ensemble = PredictiveModelEnsemble(window=timedelta(minutes=15), horizons=(timedelta(minutes=15), timedelta(minutes=30), timedelta(minutes=60), timedelta(minutes=120)))
+    ensemble = PredictiveModelEnsemble(window=timedelta(minutes=30), horizons=(timedelta(minutes=30), timedelta(minutes=60), timedelta(minutes=120)))
     ensemble.train()
     horizons, predictions = ensemble.predict()
     print(horizons)

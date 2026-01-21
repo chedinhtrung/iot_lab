@@ -84,10 +84,6 @@ def train_duration_model(background_tasks:BackgroundTasks):
     background_tasks.add_task(train_then_save, duration_model)
 
 
-def generate_prediction(data:dict|None):
-    pass
-
-
 functs = [detect_emergency, train_duration_model, detect_high_co2]
 
 for function in functs:
