@@ -29,7 +29,8 @@ def check_todo(i, new_value):
 
 def delete_all_checked():
     for todo in state.todos:
-        if not todo.is_done:
+        if todo.is_done:
+            print(f"deleting todo {todo.text}")
             todo.delete()
     state.todos = [t for t in state.todos if not t.is_done]
 

@@ -1,14 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: <component-name>
+  name: homecare-hub
+  namespace: digital-twin
 spec:
   type: NodePort
   ports:
-    - name: <component-name>
+    - name: homecare-hub
       port: 9000
       targetPort: 9000
       nodePort: 9000
       protocol: TCP
   selector:
-    app: <component-name>
+    app: homecare-hub

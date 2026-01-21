@@ -1,25 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: <component-name>
+  name: homecare-hub
+  namespace: digital-twin
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: <component-name>
+      app: homecare-hub
   template:
     metadata:
       labels:
-        app: <component-name>
+        app: homecare-hub
     spec:
       imagePullSecrets:
         - name: <secret>
       containers:
-        - name: <component-name>
-          image: <image-name>:<tag>
+        - name: homecare-hub
+          image: stevenlarry473/homecare-hub:latest
           imagePullPolicy: "Always"
           ports:
             - containerPort: 9000
           envFrom:
             - configMapRef:
-                name: <component-name>-configmap
+                name: homecare-hub-configmap

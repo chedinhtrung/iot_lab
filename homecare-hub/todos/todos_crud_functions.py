@@ -4,12 +4,9 @@ from influxdb_client import Point, WritePrecision, InfluxDBClient
 from datetime import datetime, timezone
 from pydantic import BaseModel
 import uuid
+from config import *
 
-ORG = "wise2025"
-TOKEN = "FrE7QsTmmI9QMYlsE1_kJ_IC1ErCObNaqOBWN3FKkP4JX6DXXlGbBh_UsKON-lfKDwJyQhiVrwGoniRHylmamw=="
-URL="http://192.168.0.103:8086"
 
-TODO_BUCKET = "todos"
 
 
 class Todo:
@@ -32,13 +29,13 @@ class Todo:
         )
     
     def push_to_influx(self):
-        with InfluxDBClient(url=URL, org=ORG, token=TOKEN, verify_ssl=False) as client:
+        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN_TODOS, verify_ssl=False) as client:
             write_api = client.write_api(write_options=SYNCHRONOUS)
             write_api.write(bucket=TODO_BUCKET, record=self.to_influx_point())
             print(f"Write todo {self.text} to Influx")
 
     def delete(self):
-        with InfluxDBClient(url=URL, org=ORG, token=TOKEN, verify_ssl=False) as client:
+        with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN_TODOS, verify_ssl=False) as client:
             delete_api = client.delete_api()
 
             start = datetime(1970, 1, 1, tzinfo=timezone.utc)  # "from the beginning"
@@ -65,7 +62,7 @@ def get_todos():
             valueColumn: "_value"
         )
     """
-    with InfluxDBClient(url=URL, org=ORG, token=TOKEN, verify_ssl=False) as client:
+    with InfluxDBClient(url=INFLUX_URL, org=ORG, token=TOKEN_TODOS, verify_ssl=False) as client:
         read_api = client.query_api()
         tables = read_api.query(query)
     

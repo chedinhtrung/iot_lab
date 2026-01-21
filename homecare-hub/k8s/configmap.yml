@@ -1,9 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: <component-name>-configmap
+  name: homecare-hub-configmap
+  namespace: digital-twin
   labels:
-    app: <component-name>
+    app: homecare-hub
 data:
   INFLUXDB_HOST: http://influx.iot.svc.cluster.local:8086
   INFLUXDB_USER: admin
