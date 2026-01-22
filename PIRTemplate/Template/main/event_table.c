@@ -4,8 +4,11 @@
 RTC_DATA_ATTR EventTableData event_table[TABLE_SIZE] = {0};  
 RTC_DATA_ATTR int table_index = -1;
 
+RTC_DATA_ATTR int table_full = 0; // persistent table full flag
+
 int put_data(uint8_t type, uint8_t len, uint8_t* buf){
     if (table_index + 1 == TABLE_SIZE){
+        table_full = 1;
         return 1;          // Table full
     }
     table_index += 1;
@@ -17,6 +20,7 @@ int put_data(uint8_t type, uint8_t len, uint8_t* buf){
 
 void clear_table(void){
     table_index = -1;
+    table_full = 0;
 }
 
 void force_insert_data(uint8_t type, uint8_t len, uint8_t* buf){

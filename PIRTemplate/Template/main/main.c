@@ -40,7 +40,6 @@ RTC_DATA_ATTR uint64_t mac_int = 0;
 RTC_DATA_ATTR char location[10] = {0};
 RTC_DATA_ATTR char device_topic[20];
 RTC_DATA_ATTR char device_key[800];
-int table_full = 0;
 
 i2c_config_t i2c_conf = {
     .mode = I2C_MODE_MASTER,
@@ -56,6 +55,7 @@ i2c_dev_t i2c_rtc;
 extern bool scan_done;
 extern bool tag_found;
 extern int bt_rssi;
+extern int table_full;
 
 void app_main() {
 
@@ -291,7 +291,7 @@ void record_pir_data(void){
   d.timestamp = now * 1000;
 
   strcpy(&(d.roomID), location);
-  table_full = put_data(PIRDATA, sizeof(PIRData), &d);
+  put_data(PIRDATA, sizeof(PIRData), &d);
   printf("PIRdata to table at %i \n", table_index);
 
   if (table_full){
@@ -321,7 +321,7 @@ void record_air_data(CO2_Data data){
   d.co2 = data.co2;
   d.temp = data.temp;
   d.hum = data.hum;
-  table_full = put_data(AIRDATA, sizeof(AirData), &d);
+  put_data(AIRDATA, sizeof(AirData), &d);
   printf("Airdata to table at %i \n", table_index);
 
   if (table_full){
@@ -348,7 +348,7 @@ void record_door_data(void){
 
   d.timestamp = now * 1000;
   strcpy(&(d.roomID), location);
-  table_full = put_data(DOORDATA, sizeof(DoorData), &d);
+  put_data(DOORDATA, sizeof(DoorData), &d);
   printf("Doordata to table at %i \n", table_index);
 
   if (table_full){
