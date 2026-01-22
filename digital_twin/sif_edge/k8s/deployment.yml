@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sif-edge
-  namespace: digital-twin
 spec:
   replicas: 1
   selector:
@@ -15,7 +14,7 @@ spec:
     spec:
       containers:
         - name: sif-edge
-          image: stevenlarry473/sif-edge-v2:latest
+          image: stevenlarry473/sif-edge:latest
           imagePullPolicy: "Always"
           ports:
             - containerPort: 9000

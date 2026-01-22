@@ -1,19 +1,17 @@
-from common import EventRequest, Event, BaseFunction, Function, DeleteFunction, MetricsProcessor, MetricsIndex
 from fastapi import FastAPI
+
+from common import EventRequest, Event, BaseFunction, Function, DeleteFunction
+
 from dispatcher import Dispatcher
-from scheduler import Scheduler, WeightUpdater
+from scheduler import Scheduler
 import builtins
 import traceback
 
 app = FastAPI()
 
-metrics = MetricsProcessor()
-
-weights = WeightUpdater()
-
-dispatcher = Dispatcher(metrics.init(), weights)
+dispatcher = Dispatcher()
 sch = Scheduler(
-    dispatcher=dispatcher.return_event_loop(), weights=weights)
+    dispatcher=dispatcher.return_event_loop())
 
 dispatcher.wait_loop()
 sch.wait_loop()
@@ -21,17 +19,19 @@ sch.wait_loop()
 sch_evt_loop = sch.return_event_loop()
 
 
-@app.post("/api/event", status_code=200)
+@app.post("/api/event")
 def handle_event(evt_req: EventRequest):
-    print(f"Got event {evt_req.data}")
     evt = Event(evt_req.name, data=evt_req.data)
     sch_evt_loop.put(evt, True)
-    return {"status": 200}
+    return
 
 
 @app.post("/api/function")
 def register_fn(fn_data: BaseFunction):
-    sch.register_fn(fn_data)
+    fn = Function(fn_data.name, fn_data.subs, fn_data.url,
+                  fn_data.mock, fn_data.method)
+    sch.register_fn(fn)
+    print(f"registered function {fn_data.name} at endpoint {fn_data.url}")
     return
 
 
@@ -44,14 +44,3 @@ def delete_fn(fn_data: DeleteFunction):
 @app.get("/api/status")
 def status_fn():
     return sch.status_sch()
-
-
-@app.get("/api/reset")
-def reset_samples():
-    metrics.reset_file()
-
-
-@app.post("/api/reset")
-def reset_metrics(data: MetricsIndex):
-    weights.set_index(data.index)
-    return {"status": 200}

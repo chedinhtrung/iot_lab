@@ -1,4 +1,3 @@
 fastapi[standard]
 pytz
 urllib3
-kubernetes

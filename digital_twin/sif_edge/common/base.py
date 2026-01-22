@@ -3,29 +3,13 @@ import urllib3
 import logging
 
 from abc import ABC
-from enum import Enum
-from typing import Dict, Optional, Any, List, Union
+from typing import Dict, Optional, Any, List
 from datetime import datetime
 from pydantic import BaseModel
 
-import json
-
 from .status import EventStatus
-from multiprocessing import Queue
 
-logger = logging.getLogger("fastapi_cli")
-
-logging.getLogger("requests").setLevel(logging.DEBUG)
-
-
-class Endpoint(Enum):
-    MICROSERVICE = 1
-    KNATIVE = 2
-
-
-class MetricsIndex(BaseModel):
-    index: int
-
+logger = logging.getLogger("uvicorn.error")
 
 class EventRequest(BaseModel):
     name: str
@@ -41,7 +25,6 @@ class BaseFunction(BaseModel):
     subs: List[str]
     url: str
     method: Optional[str] = "GET"
-    endpoint: Optional[Endpoint] = Endpoint.MICROSERVICE
     mock: Optional[bool] = False
 
 
@@ -51,7 +34,7 @@ class Event(ABC):
         self.name: str = name
         self.data: List[Dict[Any, Any]] | Dict[Any, Any] = data
         self.status: EventStatus = EventStatus.CREATED
-        self.timestamp: int = int(datetime.now().timestamp()*1000)
+        self.timestamp: str = datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
 
 
 class Invocation(ABC):
@@ -60,64 +43,31 @@ class Invocation(ABC):
     requirements.
     """
 
-    def __init__(self, url: str, method: str, endpt_type, mock: bool, metrics_data,  ** kwargs):
+    def __init__(self, url: str, method: str, mock: bool, ** kwargs):
         super(Invocation, self).__init__()
         self.kwargs = kwargs
         self.url = url
         self.method = method
         self.mock = mock
-        self.endpt_type = endpt_type
-        self.metrics_data = metrics_data
 
-    def invoke(self, metrics: Queue, weights):
+    def invoke(self):
         try:
             if not self.mock:
                 # TODO: Add retries method and provide feedback with function name
                 if self.method == "GET":
                     self.kwargs = {}
-                timeout = urllib3.Timeout(connect=10.0, read=None)
-                http = urllib3.PoolManager(timeout=timeout, retries=5)
-                self.metrics_data["request_start"] = int(
-                    datetime.now().timestamp()*1000)
-                # if self.endpt_type != Endpoint.MICROSERVICE:
-                #     _url = urllib3.util.parse_url(self.url)
-                #     url = f"http://kourier.kourier-system.svc.cluster.local{
-                #         _url.path}"
-                #     res = http.request(self.method, url, headers={
-                #                        "Host": _url.host}, **self.kwargs)
-                # else:
 
-                res = http.request(self.method, self.url, **self.kwargs)
-                print(f"Invoking {self.method}, request to {self.url}")
-
-                self.metrics_data["request_end"] = int(
-                    datetime.now().timestamp()*1000)
-                weights.lock.acquire(True)
-                weights.queue.put(1, True)
-                weights.lock.release()
-                weights.submit(
-                    self.url,
-                    self.metrics_data["request_end"]
-                    - self.metrics_data["request_start"]
-                )
-
-                data = res.data.decode('utf-8')
-
-                data = json.loads(data)
-
-                self.metrics_data.update(data)
-
+                res = urllib3.request(self.method, self.url, **self.kwargs, timeout=60)
                 if res.status >= 300:
                     logger.warn(
-                        f"failure to invoke {res.url} because: {res.reason}")
-                # logger.info("invocation has been dispatched")
-                res.release_conn()
-                res.close()
+                        f"failure to invoke remote resource because: [{res.reason}]")
+                    print(self.kwargs)
+                    print(self.method)
+                    print(self.url)
+                logger.info("invocation has been dispatched")
         except Exception as err:
-            logger.error(f"Failure during invocation because {err}")
-        self.metrics_data["event_end"] = int(
-            datetime.now().timestamp()*1000)
-        metrics.put(self.metrics_data, block=True)
+            logger.error("Failure during invocation...")
+            logger.error(err)
         return
 
 
@@ -137,67 +87,29 @@ class Function(ABC):
     correspondg event(s) data.
     """
 
-    def __init__(self, name: str, subs: List[str], mock: bool = False):
+    def __init__(self, name: str, subs: List[str], ref: str, mock: bool = False, method: str = "GET"):
         super(Function, self).__init__()
 
         self.name: str = name
-        self.endpoints: Dict[str, Dict[str, Union[str, Endpoint]]] = dict()
-        self.last_endpoint = -1
+        self.ref: str = ref
+        self.method: str = method
         self.events: Dict[str, List[Event]] = {}
         self.subs: List[str] = subs
         self.ready: List[List[str]] = []
         self.last_pos = None
         self.mock = mock
         self.last_invoke = None
-
-        self.last_start = 0
-        self.last_end = 0
-
         self.reset_fn()
-
-    def reset_metrics(self, metrics: Queue):
-        self.metrics = metrics
-
-    def set_start(self):
-        if self.last_start != 0:
-            return
-        self.last_start = int(datetime.now().timestamp()*1000)
-
-    def set_end(self):
-        if self.last_end != 0:
-            return
-        self.last_end = int(datetime.now().timestamp()*1000)
 
     def __repr__(self):
         return pformat(vars(self), indent=4)
 
     def print(self):
-        return f"[{self.name}] -> {self.endpoints} ? {','.join(self.subs)}"
-
-    def register_endpoint(self, url, method, endpt: Endpoint):
-
-        pt = self.endpoints.get(url, None)
-        if pt is None:
-            self.endpoints[url] = {"method": method,
-                                   "endpoint": endpt,
-                                   "weight": 1,
-                                   "count": 0}
-        else:
-            logger.info(
-                f"Upating endpoint to {url} on {self.name}")
-            self.endpoints[url].update({"endpoint": endpt, "method": method})
-
-        return
-
-    def refresh_weights(self, weights):
-        for k, v in self.endpoints.items():
-            weights.register(k)
-            v.update({"weight": 1, "count": 0})
+        return f"[{self.name}] -> {self.ref} ? {','.join(self.subs)}"
 
     def update_event(self, evt: Event) -> bool:
         if evt.name not in self.subs:
             return False
-        self.set_start()
         if len(self.ready) == 0:
             self.events[evt.name] = [evt]
             idx = self.subs.index(evt.name)
@@ -206,7 +118,6 @@ class Function(ABC):
             self.ready.append(vals)
             if None not in self.ready[-1]:
                 self.last_pos = 0
-                self.set_end()
                 return True
             return False
 
@@ -226,7 +137,6 @@ class Function(ABC):
 
                 if None not in self.ready[-1]:
                     self.last_pos = len(self.ready) - 1
-                    self.set_end()
                     return True
                 return (self.last_pos is not None) or False
             else:
@@ -241,14 +151,11 @@ class Function(ABC):
                 evt_tr[jdx] = evt.name
                 if None not in evt_tr:
                     self.last_pos = idx
-                    self.set_end()
                     return True
                 return False
         return False
 
     def reset_fn(self):
-        self.last_start = 0
-        self.last_end = 0
         if self.last_pos is None:
             for topic in self.subs:
                 self.events[topic] = None
@@ -262,12 +169,11 @@ class Function(ABC):
                 if len(self.events[topic]) > self.last_pos:
                     self.events[topic].pop(self.last_pos)
 
-            # logger.info(
-            #     f"removing {lst} from the ready queue for function {self.name}")
+            logger.info(
+                f"removing {lst} from the ready queue for function {self.name}")
             self.last_pos = None
 
-    def generate_invocation(self, weights) -> Invocation:
-        env_start = 999999999999999
+    def generate_invocation(self) -> Invocation:
         kwargs = dict()
         for k, v in self.events.items():
             vals = dict()
@@ -275,46 +181,10 @@ class Function(ABC):
                 vals["data"] = v[self.last_pos].data
             vals["timestamp"] = v[self.last_pos].timestamp
             kwargs[k] = vals
-            if v[self.last_pos].timestamp < env_start:
-                env_start = v[self.last_pos].timestamp
 
-        # self.last_endpoint = (self.last_endpoint + 1) % len(self.endpoints)
-        # endpt = self.endpoints[self.last_endpoint]
-        lst = []
-        for k, _ in self.endpoints.items():
-            lst.append(k)
-        w = weights.search(lst)
-        for (url, val) in w:
-            if self.endpoints.get(url).get("weight") > val:
-                self.endpoints[url]["weight"] = val
-            elif self.endpoints.get(url).get("weight") < val:
-                self.endpoints[url]["weight"] = val
-                self.endpoints[url]["count"] = 0
-
-        target_pt = None
-        while target_pt is None:
-            for (url, val) in w:
-                tmp = self.endpoints.get(url)
-                if tmp["weight"] > tmp["count"]:
-                    target_pt = (url, tmp)
-                    tmp["count"] += 1
-                    break
-
-            if target_pt is None:
-                for k, _ in self.endpoints.items():
-                    self.endpoints[k]["count"] = 0
-
-        metrics = {
-            "event_start": env_start,
-            "invocation_waiting": self.last_start,
-            "invocation_ready": self.last_end
-        }
-
-        inv = Invocation(target_pt[0], target_pt[1]["method"],
-                         target_pt[1]["endpoint"], self.mock,
-                         metrics, json=kwargs)
+        inv = Invocation(self.ref, self.method, self.mock, json=kwargs)
         self.reset_fn()
         self.last_invoke = int(datetime.now(
             pytz.timezone("Europe/Berlin")).timestamp()*1000)
-        # logger.info(f"Invoking {target_pt[0]}...")
+
         return inv

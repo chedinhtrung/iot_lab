@@ -1,5 +1,4 @@
-from .base import Invocation, Function, Event, EventRequest, BaseFunction, DeleteFunction, MetricsIndex
-from .metrics import MetricsProcessor
+from .base import Invocation, Function, Event, EventRequest, BaseFunction, DeleteFunction
 
 __all__ = ["Invocation", "Function", "Event",
-           "EventRequest", "BaseFunction", "DeleteFunction", "MetricsProcessor", "MetricsIndex"]
+           "EventRequest", "BaseFunction", "DeleteFunction"]

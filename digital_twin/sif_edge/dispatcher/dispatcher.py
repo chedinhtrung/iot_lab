@@ -5,16 +5,15 @@ from multiprocessing import Queue
 import logging
 import common
 
-logger = logging.getLogger("fastapi_cli")
+logger = logging.getLogger("uvicorn.error")
+logging.getLogger("requests").setLevel(logging.INFO)
 
 
 class Dispatcher(ABC):
-    def __init__(self, metrics_queue: Queue, weighs):
+    def __init__(self):
         super(Dispatcher, self).__init__()
 
         self.event_loop: Queue[common.Invocation] = Queue()
-        self.metrics_queue = metrics_queue
-        self.weights = weighs
 
     def return_event_loop(self) -> "Queue[common.Invocation]":
         """
@@ -31,6 +30,4 @@ class Dispatcher(ABC):
     def _wait_loop(self):
         while (event := self.event_loop.get(True)):
             logger.info("event incoming for processing")
-            thr = Thread(target=event.invoke, args=(
-                self.metrics_queue, self.weights,))
-            thr.start()
+            event.invoke()
