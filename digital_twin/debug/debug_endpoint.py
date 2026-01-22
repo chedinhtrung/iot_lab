@@ -1,6 +1,6 @@
 import requests
 
-data = {"name": "detect_high_co2", "data": "secret"}
+data = {"name": "train_duration_model", "data": "secret"}
 
 response = requests.post("http://192.168.0.103:30032/api/event", 
                          json = data)

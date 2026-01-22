@@ -4,8 +4,8 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, timezone
-from modelling.data.preprocessing import get_bucketized_occupancy
-from modelling.data.preprocessing import *
+from predictive_models.data.preprocessing import get_bucketized_occupancy
+from predictive_models.data.preprocessing import *
 import os
 import pickle
 
@@ -308,10 +308,6 @@ class PredictiveModelEnsemble:
         
         output["probabilities"] = multihorizon_probabilities
         return output
-
-        
-
-        
 
 def load_model(pickle_file):
     """

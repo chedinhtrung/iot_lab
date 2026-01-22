@@ -4,8 +4,8 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, timezone
-from modelling.preprocessing import get_bucketized_occupancy
-from modelling.preprocessing import *
+from duration_model.preprocessing import get_bucketized_occupancy
+from duration_model.preprocessing import *
 import os
 import pickle
 

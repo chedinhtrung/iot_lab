@@ -1,6 +1,6 @@
 from sifec_base import LocalGateway, base_logger, PeriodicTrigger, OneShotTrigger
 from utils import * 
-from modelling.model import *
+from duration_model.model import *
 from fastapi import BackgroundTasks
 
 app = LocalGateway(mock=False)
@@ -12,10 +12,6 @@ if duration_model is None:
     duration_model = StayDurationModel(timedelta(minutes=15))
     duration_model.train()
     save_model(duration_model)
-
-def train_then_save(model):
-    model.train()
-    save_model(model)
 
 def detect_emergency(data:dict|None):
     print(f"check emergency event received. Checking...")
@@ -79,12 +75,10 @@ def detect_high_co2(data:dict|None):
         print(f"Trying to emit Emergency Event CO2: {event.data}")
         event()
     
-def train_duration_model(background_tasks:BackgroundTasks):
-    print(f"Training duration model...")
-    background_tasks.add_task(train_then_save, duration_model)
 
 
-functs = [detect_emergency, train_duration_model, detect_high_co2]
+
+functs = [detect_emergency, detect_high_co2]
 
 for function in functs:
     app.deploy(cb=function, name=function.__name__, evts=function.__name__, method="POST")
@@ -97,6 +91,9 @@ detect_emergency_trigger = PeriodicTrigger(PeriodicFunctionEvent(detect_emergenc
 detect_co2_trigger = PeriodicTrigger(PeriodicFunctionEvent(detect_high_co2), 
                                            cronSpec="*/15 * * * *")
 
+def train_duration_model():  # only for the name! real training happens in model component
+    pass
+
 # every week on monday
-train_model_trigger = PeriodicTrigger(PeriodicFunctionEvent(train_duration_model), 
-                                           cronSpec="0 0 * * 1")
+train_model_trigger = PeriodicTrigger(train_duration_model,
+                                        cronSpec="0 0 * * 1")

@@ -1,6 +1,7 @@
 from sifec_base import LocalGateway, base_logger, PeriodicTrigger, BaseEventFabric 
 from pydantic import BaseModel
-from modelling.model import * 
+from predictive_models.model import * 
+from duration_model.model import *
 from fastapi import BackgroundTasks
 
 # the models 
@@ -19,6 +20,13 @@ if predictive_model is None:
                                            horizons=[timedelta(minutes=30), timedelta(minutes=60), timedelta(minutes=120), timedelta(minutes=180)])
     predictive_model.train()
     save_model(predictive_model)
+
+duration_model = load_model(f"latest/{StayDurationModel.__name__}.pkl")
+if duration_model is None:
+    print("Warning: Can't find pretrained. Initializing new duration model")
+    duration_model = StayDurationModel(timedelta(minutes=15))
+    duration_model.train()
+    save_model(duration_model)
 
 # Functions and registering them with the scheduler
 # The scheduler's endpoint has to be set with SCH_SERVICE_NAME env var
@@ -39,6 +47,11 @@ def train_predictive_model(background_tasks:BackgroundTasks):
     background_tasks.add_task(train_then_save, predictive_model)
     return {"success": True}
 
+def train_duration_model(background_tasks:BackgroundTasks):
+    print(f"Training duration model...")
+    background_tasks.add_task(train_then_save, duration_model)
+    return {"success": True}
+
 @app.get("/api/predict")
 def create_prediction_report(data:dict|None):
     """
@@ -48,7 +61,7 @@ def create_prediction_report(data:dict|None):
     results = predictive_model.jsonify(predictive_model.predict())
     return results
 
-training_fct = [train_bayesian_model, train_predictive_model]
+training_fct = [train_bayesian_model, train_predictive_model, train_duration_model]
 
 for cb in training_fct:
     app.deploy(cb=cb, evts=cb.__name__, name=cb.__name__, method="POST")
@@ -69,6 +82,6 @@ class PeriodicEvent(BaseEventFabric):
 train_bayesian_trigger = PeriodicTrigger(PeriodicEvent(train_bayesian_model),
                                          cronSpec="0 0 * * 1")
 
-train_predictive_trigger = PeriodicTrigger(PeriodicEvent(train_predictive_model),
+train_bayesian_trigger = PeriodicTrigger(PeriodicEvent(train_bayesian_model),
                                          cronSpec="0 0 * * 1")
 
