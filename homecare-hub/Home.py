@@ -11,6 +11,7 @@ def run():
         """
             I really cannot learn a new JS framework and this is not a frontend development course, so have fun
             with this UI :)
+            Please note that this unit functions as the combination of homecare-hub (frontend) and sif-viz (backend) all in one.
         """
     )
 
