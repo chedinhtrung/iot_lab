@@ -6,7 +6,6 @@
 extern char location[10];
 
 void start_mqtt(void);
-void sendPIReventToMQTT(void);
 void sendBatteryStatusToMQTT(void);
-void sendDoorEventToMQTT(void);
+
 int sendTableToMQTT(void);

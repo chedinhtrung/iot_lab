@@ -298,9 +298,12 @@ void record_pir_data(void){
     printf("Table is full\n");
     start_wifi_mqtt();
     int send_success = sendTableToMQTT();
-    if (send_success != -1){
+    if (send_success > 0){
         clear_table();
         printf("Sent table\n");
+    }
+    else {
+      force_insert_data(PIRDATA, sizeof(PIRData), &d);
     }
   }
 }
@@ -329,6 +332,9 @@ void record_air_data(CO2_Data data){
         clear_table();
         printf("Sent table\n");
     }
+    else {
+      force_insert_data(AIRDATA, sizeof(AirData), &d);
+    }
   }
 }
 
@@ -352,6 +358,8 @@ void record_door_data(void){
     if (send_success != -1){
         clear_table();
         printf("Sent table\n");
+    } else {
+      force_insert_data(DOORDATA, sizeof(DoorData), &d);
     }
   }
 }

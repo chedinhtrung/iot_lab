@@ -18,4 +18,5 @@ typedef struct {
 extern RTC_DATA_ATTR EventTableData event_table[TABLE_SIZE];  
 extern RTC_DATA_ATTR int table_index;
 
-int insert_data(uint8_t type, uint8_t len, uint8_t* buf);
+int put_data(uint8_t type, uint8_t len, uint8_t* buf);
+void force_insert_data(uint8_t type, uint8_t len, uint8_t* buf);
