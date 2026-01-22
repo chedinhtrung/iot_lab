@@ -9,3 +9,7 @@ TODO_BUCKET = "todos"
 
 TOKEN_TODOS = os.getenv("TOKEN_TODOS", "FrE7QsTmmI9QMYlsE1_kJ_IC1ErCObNaqOBWN3FKkP4JX6DXXlGbBh_UsKON-lfKDwJyQhiVrwGoniRHylmamw==")
 TODO_BUCKET = "todos"
+
+MAIL_PASS = os.getenv("MAIL_PASS")
+MAIL_USR = os.getenv("MAIL_USR")
+MAIL_DEST = os.getenv("MAIL_DEST")
